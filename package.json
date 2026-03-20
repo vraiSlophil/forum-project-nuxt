@@ -1,0 +1,48 @@
+{
+  "name": "forum-project-nuxt",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "dev:docker": "nuxt dev --host 0.0.0.0 --port 3000",
+    "typecheck": "nuxt typecheck",
+    "preview": "nuxt preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "db:push": "prisma db push",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "postinstall": "nuxt prepare && prisma generate",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{css,html,js,json,md,mjs,scss,ts,vue,yaml,yml}": "prettier --write --ignore-unknown"
+  },
+  "dependencies": {
+    "@primeuix/themes": "^2.0.3",
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^7.5.0",
+    "nuxt": "^4.4.2",
+    "nuxt-auth-utils": "^0.5.29",
+    "pg": "^8.20.0",
+    "primevue": "^4.5.4",
+    "vue": "^3.5.30",
+    "vue-router": "^5.0.3"
+  },
+  "devDependencies": {
+    "@nuxt/eslint": "^1.15.2",
+    "@primevue/nuxt-module": "^4.5.4",
+    "dotenv": "^17.3.1",
+    "eslint": "^10.0.3",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.1",
+    "prisma": "^7.5.0",
+    "typescript": "^5.9.3"
+  }
+}

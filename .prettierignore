@@ -1,0 +1,7 @@
+.nuxt
+.output
+.data
+.cache
+dist
+node_modules
+server/generated/prisma

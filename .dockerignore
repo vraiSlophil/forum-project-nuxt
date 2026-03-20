@@ -1,0 +1,10 @@
+.git
+.nuxt
+.output
+.data
+.cache
+dist
+node_modules
+server/generated/prisma
+.env
+npm-debug.log*
