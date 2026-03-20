@@ -7,3 +7,79 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id                     String    @id @default(uuid()) @db.Uuid
+  username               String    @unique @db.VarChar(50)
+  passwordHash           String    @map("password_hash") @db.VarChar(255)
+  role                   UserRole  @default(USER)
+  avatarUrl              String?   @map("avatar_url") @db.VarChar(255)
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  topics                 Topic[]
+  messages               Message[] @relation("MessageAuthor")
+  moderatedMessages      Message[] @relation("MessageDeletedByUser")
+
+  @@map("users")
+}
+
+model Forum {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique @db.VarChar(120)
+  slug      String   @unique @db.VarChar(160)
+  description String? @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  topics    Topic[]
+
+  @@map("forums")
+}
+
+model Topic {
+  id            String    @id @default(uuid()) @db.Uuid
+  forumId       String    @map("forum_id") @db.Uuid
+  authorId      String    @map("author_id") @db.Uuid
+  title         String    @db.VarChar(200)
+  slug          String    @db.VarChar(200)
+  isLocked      Boolean   @default(false) @map("is_locked")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastMessageAt DateTime  @default(now()) @map("last_message_at")
+  forum         Forum     @relation(fields: [forumId], references: [id], onDelete: Cascade)
+  author        User      @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  messages      Message[]
+
+  @@unique([forumId, slug])
+  @@index([forumId, lastMessageAt(sort: Desc)])
+  @@index([authorId])
+  @@map("topics")
+}
+
+model Message {
+  id              String    @id @default(uuid()) @db.Uuid
+  topicId         String    @map("topic_id") @db.Uuid
+  authorId        String    @map("author_id") @db.Uuid
+  quotedMessageId String?   @map("quoted_message_id") @db.Uuid
+  deletedByUserId String?   @map("deleted_by_user_id") @db.Uuid
+  content         String    @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  editedAt        DateTime? @map("edited_at")
+  deletedAt       DateTime? @map("deleted_at")
+  topic           Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  author          User      @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  quotedMessage   Message?  @relation("MessageQuote", fields: [quotedMessageId], references: [id], onDelete: SetNull)
+  quotedBy        Message[] @relation("MessageQuote")
+  deletedByUser   User?     @relation("MessageDeletedByUser", fields: [deletedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([topicId, createdAt])
+  @@index([authorId])
+  @@index([quotedMessageId])
+  @@index([deletedAt])
+  @@map("messages")
+}
