@@ -2,11 +2,14 @@ FROM node:24-bookworm-slim
 
 WORKDIR /app
 
+
 RUN apt-get update -y && apt-get install -y openssl
 
 ENV NPM_CONFIG_UPDATE_NOTIFIER=false
 ENV NPM_CONFIG_FUND=false
 
-EXPOSE 3000
+COPY ./package.json ./package-lock.json ./
 
-CMD ["sh", "/app/docker/entrypoint.sh"]
+RUN npm ci --omit=dev
+
+EXPOSE 3000

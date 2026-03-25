@@ -48,7 +48,8 @@ automatique. Toutes les variables d'environnement passent par `.env`. Le fichier
 
 ```bash
 cp .env.example .env
-docker compose build
+docker compose run --rm app npm install
+docker compose run --rm app npm run db:migrate:deploy
 docker compose up
 ```
 

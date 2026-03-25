@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile
-    command: ['sh', '/app/docker/entrypoint.sh']
+    command: npm run dev
     depends_on:
       db:
         condition: service_healthy
