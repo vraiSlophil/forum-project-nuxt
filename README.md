@@ -44,6 +44,7 @@ automatique. Toutes les variables d'environnement passent par `.env`. Le fichier
 
 - Node: `24-bookworm-slim`
 - PostgreSQL: `18-alpine`
+- Adminer: `5.4.2`
 
 ```bash
 cp .env.example .env
@@ -52,6 +53,8 @@ docker compose up
 ```
 
 Application: `http://localhost:3000`
+
+Adminer: `http://localhost:8080`
 
 PostgreSQL:
 
