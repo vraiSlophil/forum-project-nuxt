@@ -218,6 +218,174 @@ docker compose up
 
 ## DevTools
 
+# Brainstorming Couche Serveur Minimale
+
+Cette section trace les choix faits pour l'etape 5: poser une vraie couche
+serveur Nuxt avant l'interface complete.
+
+## Doc verifiee avant implementation
+
+Points verifies dans la doc officielle:
+
+- Nuxt 4: conventions `server/api/` et routes serveur integrees
+- `h3`: `getValidatedQuery`, `getValidatedRouterParams`, `readValidatedBody`,
+  `sendNoContent`
+- `nuxt-auth-utils`: `getUserSession`, `requireUserSession`, `hashPassword`
+
+L'objectif etait d'eviter d'inventer des conventions de routing ou des helpers
+de session qui n'existent pas vraiment dans la stack retenue.
+
+## Forme des routes
+
+Choix retenu:
+
+- des routes de lecture alignees sur les pages SSR attendues
+- des routes de mutation alignees sur les workflows du forum
+- un espace `admin` separe pour les operations sensibles
+
+Routes de lecture:
+
+- `GET /api/forums`
+- `GET /api/forums/[forumSlug]?page=...`
+- `GET /api/forums/[forumSlug]/topics/[topicSlug]?page=...`
+
+Routes de mutation:
+
+- `POST /api/forums/[forumSlug]/topics`
+- `POST /api/forums/[forumSlug]/topics/[topicSlug]/messages`
+- `PATCH /api/messages/[messageId]`
+
+Routes admin:
+
+- `POST /api/admin/forums`
+- `PATCH /api/admin/forums/[forumId]`
+- `DELETE /api/admin/forums/[forumId]`
+- `POST /api/admin/users`
+- `DELETE /api/admin/topics/[topicId]`
+- `DELETE /api/admin/messages/[messageId]`
+
+### Pourquoi cette forme
+
+- la lecture publique suit directement la hierarchie Forums -> Sujets ->
+  Messages du sujet
+- une page SSR n'a pas besoin d'une API CRUD generique enorme; elle a besoin
+  d'un payload adapte a son rendu
+- les mutations retournent assez d'informations pour rediriger proprement le
+  front vers la bonne page apres action
+
+## Reponses de mutation orientees workflow
+
+Pour `creer un sujet`, `repondre` ou `modifier un message`, les reponses ne
+renvoient pas seulement l'entite brute.
+
+Elles renvoient aussi:
+
+- le slug du forum
+- le slug du sujet
+- l'identifiant du message concerne
+- la page cible dans la pagination
+- un `redirectTo` pret a etre utilise par le front
+
+Pourquoi:
+
+- un parcours SSR de forum est surtout une suite de redirections et de retours
+  vers la page du sujet
+- une reponse purement generique de type "message updated" obligerait le front a
+  recalculer lui-meme la page ou se trouve le message
+- centraliser ce calcul cote serveur evite de dupliquer la logique de pagination
+  dans les composants
+
+## Services serveur
+
+Choix retenu:
+
+- garder les handlers HTTP tres fins
+- placer les regles metier Prisma dans `server/services/forum-service.ts`
+- placer la validation des params/body dans `server/utils/forum-validation.ts`
+- placer la logique auth dans `server/utils/forum-auth.ts`
+
+Pourquoi:
+
+- les fichiers `server/api/*` restent lisibles
+- les regles de pagination, de droits et de serialisation ne se dispersent pas
+- la future interface SSR pourra reutiliser la meme couche sans copier des
+  morceaux de requetes Prisma
+
+## Autorisation minimale
+
+L'etape 6 traitera les parcours complets d'inscription et de connexion, mais la
+couche serveur de l'etape 5 doit deja savoir proteger les routes d'ecriture.
+
+Choix retenu:
+
+- lecture publique sans session
+- routes d'ecriture protegees par `requireUserSession`
+- routes admin protegees par `requireAdminActor`
+- les routes protegees relisent l'utilisateur courant en base avant autorisation
+
+Pourquoi relire la base:
+
+- la session stockee en cookie doit rester minimale
+- le role peut changer
+- un utilisateur peut etre supprime
+- pour une route sensible, il vaut mieux verifier l'etat courant que faire
+  confiance aveuglement au cookie
+
+La session attendue pour la suite du projet est donc volontairement petite:
+
+- `id`
+- `username`
+- `role`
+
+## Pagination
+
+Choix retenu:
+
+- 20 sujets par page
+- 20 messages par page
+- validation stricte du parametre `page`
+- 404 si la page demandee depasse le nombre total de pages
+
+Pourquoi:
+
+- c'est le comportement demande par le sujet
+- cela evite d'avoir des pages "vides" ambigues
+- cela donne un contrat clair au front SSR
+
+## Slugs et renommage
+
+Choix retenu:
+
+- slug genere cote serveur a la creation
+- gestion des collisions avec suffixes numeriques
+- renommage d'un forum sans changer son slug
+
+Pourquoi conserver le slug lors d'un renommage:
+
+- un changement de nom ne doit pas casser les URLs deja partagees
+- on evite d'introduire tout de suite une couche de redirection ou
+  d'historisation des anciens slugs
+- c'est plus stable pour un forum SSR dont les liens vont vite etre references
+
+## Moderation des messages
+
+Choix retenu:
+
+- suppression logique pour un message modere
+- suppression physique pour un sujet
+- suppression physique pour un forum
+
+Implementation cote lecture:
+
+- utilisateur simple: contenu remplace par un message de moderation
+- administrateur: contenu original toujours visible
+
+Pourquoi:
+
+- coherent avec les notes de modelisation deja prises plus haut
+- garde un historique de moderation
+- ne casse ni la pagination ni les citations existantes
+
 - question sur l'intérêt du Vue / Nuxt DevTools
 - constat : utiles pour debug
 - mais pas indispensables au projet
