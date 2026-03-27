@@ -6,6 +6,10 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "dev:docker": "nuxt dev --host 0.0.0.0 --port 3000",
+    "test": "npm run test:integration && npm run test:e2e",
+    "test:prepare": "nuxi prepare",
+    "test:integration": "npm run test:prepare && vitest run tests/integration",
+    "test:e2e": "NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 prisma db push && NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 npm run test:prepare && NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 vitest run tests/e2e",
     "typecheck": "nuxt typecheck",
     "preview": "nuxt preview",
     "lint": "eslint .",
@@ -24,16 +28,17 @@
     "*.{css,html,js,json,md,mjs,scss,ts,vue,yaml,yml}": "prettier --write --ignore-unknown"
   },
   "dependencies": {
+    "@adonisjs/hash": "^10.1.0",
     "@primeuix/themes": "^2.0.3",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@tailwindcss/vite": "^4.2.1",
     "nuxt": "^4.4.2",
     "nuxt-auth-utils": "^0.5.29",
     "pg": "^8.20.0",
     "primevue": "^4.5.4",
     "vue": "^3.5.30",
-    "vue-router": "^5.0.3",
-    "@tailwindcss/vite": "^4.2.1"
+    "vue-router": "^5.0.3"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",
@@ -45,6 +50,7 @@
     "prettier": "^3.8.1",
     "prisma": "^7.5.0",
     "typescript": "^5.9.3",
+    "vitest": "^4.1.2",
     "vue-tsc": "^3.2.6"
   }
 }

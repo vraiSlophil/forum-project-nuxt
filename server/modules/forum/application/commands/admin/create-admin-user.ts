@@ -1,4 +1,3 @@
-import { hashPassword } from '#imports'
 import { requireAdminPrivileges } from '#server/modules/forum/application/shared/guards'
 import type { ForumActor } from '#server/modules/forum/domain/actors'
 import {
@@ -6,6 +5,7 @@ import {
   findUserByUsername,
   isUniqueConstraintError,
 } from '#server/modules/forum/infrastructure/forum-repository'
+import { hashForumPassword } from '#server/modules/forum/infrastructure/password'
 import type { AdminUserResponse, CreateAdminUserInput } from '#shared/types/forum'
 import { createForumApplicationError } from '../../shared/errors'
 
@@ -24,7 +24,7 @@ export async function createAdminUser(
   try {
     const user = await createAdminUserRecord({
       username: input.username,
-      passwordHash: await hashPassword(input.password),
+      passwordHash: await hashForumPassword(input.password),
     })
 
     return {

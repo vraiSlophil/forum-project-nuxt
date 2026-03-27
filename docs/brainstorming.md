@@ -537,6 +537,147 @@ Pourquoi:
 - garde un historique de moderation
 - ne casse ni la pagination ni les citations existantes
 
+## Stratégie de tests
+
+L'ajout des tests a servi à valider non seulement les use cases, mais aussi la
+solidité de l'architecture retenue.
+
+### Doc vérifiée pour la stratégie de tests
+
+Points revérifiés dans la doc officielle :
+
+- Nuxt 4 : préparation de l'environnement avec `nuxi prepare`
+- Vitest : mocking de modules, fake timers et isolement des suites
+
+L'objectif était d'éviter un setup de test "magique" qui ne fonctionnerait qu'en
+local par hasard.
+
+### Objectif retenu
+
+Le besoin n'était pas encore de tester une interface complète au navigateur,
+mais de sécuriser la couche serveur du forum.
+
+Donc, la priorité était de couvrir :
+
+- des cas légaux
+- des cas illégaux
+- les règles de droits
+- la pagination
+- les réponses HTTP réelles
+- l'intégration Prisma/PostgreSQL
+
+### Découpage retenu
+
+Deux niveaux de tests ont été retenus :
+
+- tests d'intégration sur les use cases applicatifs
+- tests e2e HTTP contre un vrai serveur Nuxt démarré dans Docker
+
+### Pourquoi des tests d'intégration
+
+Les tests d'intégration couvrent les use cases sans dépendre du démarrage
+complet de Nuxt.
+
+Ils servent à vérifier rapidement :
+
+- les autorisations
+- les erreurs applicatives
+- les calculs de page
+- les redirections retournées au front
+- les cas métier légaux et illégaux
+
+Ce choix est cohérent avec l'architecture modulaire retenue :
+
+- la couche application reste testable seule
+- les règles métier ne dépendent pas directement de `h3`
+- les mocks ciblent l'infrastructure, pas le métier
+
+### Pourquoi des tests e2e HTTP
+
+Les tests d'intégration ne suffisent pas à valider :
+
+- le routing Nuxt
+- la validation `h3`
+- les statuts HTTP
+- la session
+- la base réelle
+
+Les tests e2e ont donc été ajoutés pour exécuter de vrais appels HTTP contre le
+serveur du projet, avec PostgreSQL dans Docker.
+
+Ce qu'ils vérifient :
+
+- lecture publique
+- refus d'écriture sans session
+- écriture autorisée avec session valide
+- refus des routes admin pour un utilisateur simple
+- réussite d'une route admin pour un administrateur
+- validation HTTP des paramètres
+
+### Pourquoi pas d'e2e navigateur à ce stade
+
+Le sujet de cette étape porte d'abord sur la couche serveur.
+
+Il aurait été possible d'ajouter Playwright ou un e2e UI complet, mais la valeur
+immédiate était faible tant que les parcours d'interface du forum ne sont pas
+encore construits.
+
+Le meilleur compromis à ce stade était donc :
+
+- e2e réseau réel
+- sans surcoût d'un navigateur
+- avec un retour rapide sur les contrats serveur
+
+### Choix pratiques importants
+
+Quelques points concrets se sont imposés pendant l'implémentation :
+
+- les tests doivent s'exécuter dans le conteneur Docker du projet
+- `nuxi prepare` doit être exécuté avant Vitest, sinon les fichiers Nuxt générés
+  manquent
+- les scénarios e2e ont besoin d'un seed de base dédié
+- la création de session de test doit être explicite et activable uniquement en
+  mode test
+
+Cela a conduit à :
+
+- des scripts `test:prepare`, `test:integration` et `test:e2e`
+- un démarrage explicite du serveur Nuxt dans les tests e2e
+- un helper de seed Prisma pour les scénarios e2e
+- une route `__test__/session` activée seulement avec
+  `FORUM_ENABLE_TEST_ROUTES=1`
+
+### Leçon importante sur les imports Nuxt
+
+Le travail sur les tests a mis en évidence un point d'architecture utile :
+
+- `#imports` est pratique, mais reste un module virtuel dépendant du runtime
+  Nuxt
+
+Cela a créé une fragilité réelle :
+
+- certains tests et certains boots serveur cassaient dès qu'un module applicatif
+  ou d'infrastructure dépendait directement de `#imports`
+
+Conclusion pratique :
+
+- éviter `#imports` dans la couche application et dans l'infrastructure métier
+- préférer des adaptateurs explicites pour la session et le hachage de mot de
+  passe
+
+À l'inverse, les alias `#server` et `#shared` ne posent pas le même problème
+dans les tests, car ils peuvent être résolus comme de simples alias de chemins
+dans la configuration de Vitest.
+
+### Ce que la stratégie de tests apporte
+
+Au-delà de la couverture technique, cette stratégie confirme plusieurs points :
+
+- l'architecture modulaire est réellement testable
+- les frontières entre HTTP, application et infrastructure sont plus nettes
+- les cas illégaux ne sont pas traités seulement "par convention"
+- le backend peut être validé dans Docker de façon reproductible
+
 - question sur l'intérêt du Vue / Nuxt DevTools
 - constat : utiles pour debug
 - mais pas indispensables au projet

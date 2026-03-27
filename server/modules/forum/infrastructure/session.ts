@@ -1,9 +1,9 @@
-import { getUserSession, requireUserSession } from '#imports'
 import type { H3Event } from 'h3'
 import { findActorById } from './forum-repository'
 import type { ForumUserRole } from '#shared/types/forum'
 import type { ForumActor, SessionForumUser } from '#server/modules/forum/domain/actors'
 import { createForumApplicationError } from '#server/modules/forum/application/shared/errors'
+import { getAppUserSession, requireAppUserSession } from '#server/utils/user-session'
 
 function isForumUserRole(value: unknown): value is ForumUserRole {
   return value === 'USER' || value === 'ADMIN'
@@ -26,7 +26,7 @@ function isSessionForumUser(value: unknown): value is SessionForumUser {
 }
 
 export async function getViewerSessionUser(event: H3Event): Promise<SessionForumUser | null> {
-  const session = await getUserSession(event)
+  const session = await getAppUserSession(event)
 
   if (!isSessionForumUser(session.user)) {
     return null
@@ -38,10 +38,10 @@ export async function getViewerSessionUser(event: H3Event): Promise<SessionForum
 }
 
 export async function requireForumActor(event: H3Event): Promise<ForumActor> {
-  let session: Awaited<ReturnType<typeof requireUserSession>>
+  let session: Awaited<ReturnType<typeof requireAppUserSession>>
 
   try {
-    session = await requireUserSession(event)
+    session = await requireAppUserSession(event)
   } catch {
     throw createForumApplicationError('UNAUTHENTICATED')
   }
