@@ -23,7 +23,7 @@ abstraite.
 
 ## 6. Implémenter l'authentification et les autorisations
 
-fait : [x]
+fait : []
 
 Il faut rendre opérationnels l'inscription, la connexion, la déconnexion, le
 changement de mot de passe et la gestion des rôles.
@@ -43,7 +43,7 @@ routes.
 
 ## 7. Construire les parcours SSR de lecture publique
 
-fait : [x]
+fait : []
 
 Il faut implémenter la navigation principale du forum en commençant par les
 pages consultables sans connexion.
@@ -63,7 +63,7 @@ par le serveur en fonction des besoins exacts de chaque page SSR.
 
 ## 8. Ajouter les parcours d'écriture côté utilisateur
 
-fait : [x]
+fait : []
 
 Il faut implémenter la création de sujet, la réponse à un sujet et l'édition de
 ses propres messages.
@@ -82,7 +82,7 @@ transitions de workflow complètes et pas seulement comme des insertions en base
 
 ## 9. Mettre en place l'administration fonctionnelle
 
-fait : [x]
+fait : []
 
 Il faut créer l'espace administrateur permettant de gérer les forums, les
 administrateurs et les opérations de modération.
@@ -103,7 +103,7 @@ avec sa propre ergonomie.
 
 ## 10. Ajouter le temps réel avec WebSocket Nitro
 
-fait : [x]
+fait : []
 
 Il faut brancher la diffusion temps réel après stabilisation du CRUD principal.
 
@@ -122,7 +122,7 @@ plutôt que de diffuser des rafraîchissements opaques difficiles à faire évol
 
 ## 11. Finaliser la qualité, les tests et le packaging de rendu
 
-fait : [x]
+fait : []
 
 Il faut terminer le projet par une phase de consolidation, de vérification et de
 préparation du livrable.
@@ -143,7 +143,7 @@ minute.
 
 ## 12. Traiter les bonus uniquement après le tronc principal
 
-fait : [x]
+fait : []
 
 Il faut réserver les fonctionnalités bonus à une phase finale, une fois le
 périmètre obligatoire sécurisé.
