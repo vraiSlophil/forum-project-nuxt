@@ -1,14 +1,14 @@
-import { deleteForum } from '#server/services/forum-service'
-import { requireAdminActor } from '#server/utils/forum-auth'
-import { validateForumIdParams } from '#server/utils/forum-validation'
-import { defineEventHandler, getValidatedRouterParams, sendNoContent } from 'h3'
+import { deleteForum } from '#server/modules/forum/application/commands/admin/delete-forum'
+import { defineForumHttpHandler } from '#server/modules/forum/http/handler'
+import { validateForumIdParams } from '#server/modules/forum/http/validation'
+import { requireForumActor } from '#server/modules/forum/infrastructure/session'
+import { getValidatedRouterParams, sendNoContent } from 'h3'
 
-export default defineEventHandler(async (event) => {
-  await requireAdminActor(event)
-
+export default defineForumHttpHandler(async (event) => {
+  const actor = await requireForumActor(event)
   const { forumId } = await getValidatedRouterParams(event, validateForumIdParams)
 
-  await deleteForum(forumId)
+  await deleteForum(actor, forumId)
 
   return sendNoContent(event)
 })

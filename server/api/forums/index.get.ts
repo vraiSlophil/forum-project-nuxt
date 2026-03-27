@@ -1,8 +1,8 @@
-import { listForums } from '#server/services/forum-service'
-import { getViewerSessionUser } from '#server/utils/forum-auth'
-import { defineEventHandler } from 'h3'
+import { listForums } from '#server/modules/forum/application/queries/list-forums'
+import { defineForumHttpHandler } from '#server/modules/forum/http/handler'
+import { getViewerSessionUser } from '#server/modules/forum/infrastructure/session'
 
-export default defineEventHandler(async (event) => {
+export default defineForumHttpHandler(async (event) => {
   const viewer = await getViewerSessionUser(event)
 
   return listForums(viewer)

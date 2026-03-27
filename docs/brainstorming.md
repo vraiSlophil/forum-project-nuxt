@@ -220,42 +220,42 @@ docker compose up
 
 # Brainstorming Couche Serveur Minimale
 
-Cette section trace les choix faits pour l'etape 5: poser une vraie couche
-serveur Nuxt avant l'interface complete.
+Cette section trace les choix faits pour l'étape 5 : poser une vraie couche
+serveur Nuxt avant l'interface complète.
 
-## Doc verifiee avant implementation
+## Doc vérifiée avant implémentation
 
-Points verifies dans la doc officielle:
+Points vérifiés dans la doc officielle :
 
-- Nuxt 4: conventions `server/api/` et routes serveur integrees
-- `h3`: `getValidatedQuery`, `getValidatedRouterParams`, `readValidatedBody`,
+- Nuxt 4 : conventions `server/api/` et routes serveur intégrées
+- `h3` : `getValidatedQuery`, `getValidatedRouterParams`, `readValidatedBody`,
   `sendNoContent`
-- `nuxt-auth-utils`: `getUserSession`, `requireUserSession`, `hashPassword`
+- `nuxt-auth-utils` : `getUserSession`, `requireUserSession`, `hashPassword`
 
-L'objectif etait d'eviter d'inventer des conventions de routing ou des helpers
+L'objectif était d'éviter d'inventer des conventions de routing ou des helpers
 de session qui n'existent pas vraiment dans la stack retenue.
 
 ## Forme des routes
 
-Choix retenu:
+Choix retenu :
 
-- des routes de lecture alignees sur les pages SSR attendues
-- des routes de mutation alignees sur les workflows du forum
-- un espace `admin` separe pour les operations sensibles
+- des routes de lecture alignées sur les pages SSR attendues
+- des routes de mutation alignées sur les workflows du forum
+- un espace `admin` séparé pour les opérations sensibles
 
-Routes de lecture:
+Routes de lecture :
 
 - `GET /api/forums`
 - `GET /api/forums/[forumSlug]?page=...`
 - `GET /api/forums/[forumSlug]/topics/[topicSlug]?page=...`
 
-Routes de mutation:
+Routes de mutation :
 
 - `POST /api/forums/[forumSlug]/topics`
 - `POST /api/forums/[forumSlug]/topics/[topicSlug]/messages`
 - `PATCH /api/messages/[messageId]`
 
-Routes admin:
+Routes admin :
 
 - `POST /api/admin/forums`
 - `PATCH /api/admin/forums/[forumId]`
@@ -266,72 +266,223 @@ Routes admin:
 
 ### Pourquoi cette forme
 
-- la lecture publique suit directement la hierarchie Forums -> Sujets ->
+- la lecture publique suit directement la hiérarchie Forums -> Sujets ->
   Messages du sujet
-- une page SSR n'a pas besoin d'une API CRUD generique enorme; elle a besoin
-  d'un payload adapte a son rendu
+- une page SSR n'a pas besoin d'une API CRUD générique énorme ; elle a besoin
+  d'un payload adapté à son rendu
 - les mutations retournent assez d'informations pour rediriger proprement le
-  front vers la bonne page apres action
+  front vers la bonne page après action
 
-## Reponses de mutation orientees workflow
+## Réponses de mutation orientées workflow
 
-Pour `creer un sujet`, `repondre` ou `modifier un message`, les reponses ne
-renvoient pas seulement l'entite brute.
+Pour `créer un sujet`, `répondre` ou `modifier un message`, les réponses ne
+renvoient pas seulement l'entité brute.
 
-Elles renvoient aussi:
+Elles renvoient aussi :
 
 - le slug du forum
 - le slug du sujet
-- l'identifiant du message concerne
+- l'identifiant du message concerné
 - la page cible dans la pagination
-- un `redirectTo` pret a etre utilise par le front
+- un `redirectTo` prêt à être utilisé par le front
 
-Pourquoi:
+Pourquoi :
 
 - un parcours SSR de forum est surtout une suite de redirections et de retours
   vers la page du sujet
-- une reponse purement generique de type "message updated" obligerait le front a
-  recalculer lui-meme la page ou se trouve le message
-- centraliser ce calcul cote serveur evite de dupliquer la logique de pagination
+- une réponse purement générique de type "message updated" obligerait le front à
+  recalculer lui-même la page où se trouve le message
+- centraliser ce calcul côté serveur évite de dupliquer la logique de pagination
   dans les composants
 
 ## Services serveur
 
-Choix retenu:
+### Constats après premier jet
 
-- garder les handlers HTTP tres fins
-- placer les regles metier Prisma dans `server/services/forum-service.ts`
-- placer la validation des params/body dans `server/utils/forum-validation.ts`
-- placer la logique auth dans `server/utils/forum-auth.ts`
+Avant le refactor, la couche serveur avait déjà quelques bons signaux :
 
-Pourquoi:
+- handlers HTTP courts
+- validation centralisée
+- logique métier commencée dans une couche service
+
+Mais un problème de structure apparaissait déjà :
+
+- un unique fichier service regroupait lecture publique, écriture utilisateur,
+  administration, pagination, sérialisation SSR, redirections et gestion
+  d'erreurs
+- les fonctions de service levaient directement des erreurs HTTP
+- certaines autorisations sensibles vivaient seulement dans les handlers
+- la couche service dépendait à la fois de Prisma, de `h3`, de la session et du
+  format exact des réponses SSR
+
+Conclusion :
+
+- ce n'était déjà plus un simple service applicatif
+- c'était un point de concentration de responsabilités hétérogènes
+- avec l'arrivée de l'auth complète et du WebSocket, ce fichier serait devenu un
+  monolithe difficile à faire évoluer proprement
+
+### Question d'architecture posée
+
+Questions examinées :
+
+- faut-il rester sur une organisation proche de MVC ?
+- faut-il passer en hexagonale ?
+- existe-t-il un compromis plus simple et plus souple ?
+
+Le critère principal retenu n'était pas "la plus belle architecture sur le
+papier", mais :
+
+- garder une base défendable pour le rendu
+- ne pas sur-architecturer trop tôt
+- éviter qu'une seule couche devienne responsable de tout
+
+Choix retenu :
+
+- garder les handlers HTTP très fins
+- séparer le serveur par module `forum`
+- isoler les use cases applicatifs, les règles domaine et l'accès Prisma/session
+- garder la validation HTTP dans une couche transport dédiée
+
+Pourquoi :
 
 - les fichiers `server/api/*` restent lisibles
-- les regles de pagination, de droits et de serialisation ne se dispersent pas
-- la future interface SSR pourra reutiliser la meme couche sans copier des
-  morceaux de requetes Prisma
+- les règles de pagination, de droits et de sérialisation ne se dispersent pas
+- les routes HTTP, le WebSocket et d'autres adaptateurs futurs pourront appeler
+  les mêmes use cases
+- on évite le gros fichier service unique qui mélangeait transport,
+  autorisation, requêtes Prisma et DTO SSR
+
+### Forme d'architecture retenue
+
+Architecture retenue :
+
+- pas de MVC classique
+- pas d'hexagonale complète
+- une architecture modulaire "clean-lite"
+
+### Pourquoi pas MVC
+
+Le problème de MVC ici n'est pas qu'il soit "mauvais", mais qu'il est trop flou
+pour ce type de backend intégré Nuxt.
+
+Risques observés :
+
+- un dossier `controllers/` finit souvent par contenir validation, authz, appels
+  Prisma, mapping de réponse et règles métier
+- un dossier `services/` devient alors une zone fourre-tout sans frontière
+  claire
+- on retombe vite sur la situation initiale : un gros fichier central qui sait
+  tout faire
+
+Autrement dit :
+
+- MVC est moins fermé qu'une hexagonale stricte
+- mais il ne donne pas assez de garde-fous pour empêcher le mélange transport /
+  application / infrastructure
+
+### Pourquoi pas hexagonale complète
+
+L'hexagonale devenait tentante pour séparer proprement le métier du reste, mais
+elle a été jugée prématurée dans ce projet.
+
+Raisons :
+
+- backend intégré directement dans Nuxt
+- un seul accès aux données via Prisma/PostgreSQL
+- pas encore de second adaptateur applicatif réel en dehors du HTTP
+- peu de valeur immédiate à introduire ports, adapters, interfaces et factories
+  partout
+
+Risque principal :
+
+- payer beaucoup de cérémonie avant d'avoir une complexité qui la justifie
+
+### Compromis retenu
+
+Le compromis choisi est une architecture modulaire orientée use cases.
+
+Idée :
+
+- prendre de la clean architecture la séparation des responsabilités
+- sans imposer toute la mécanique formelle d'une hexagonale stricte
+
+Ce que cela donne concrètement :
+
+- la couche HTTP valide, traduit et fixe les status codes
+- la couche application porte les use cases
+- la couche domaine porte les règles pures et réutilisables
+- la couche infrastructure porte Prisma, la session et les détails techniques
+
+Ce que ce compromis apporte :
+
+- plus de souplesse qu'une hexagonale stricte
+- plus de garde-fous qu'un simple couple controllers/services
+- une base simple à expliquer dans un rapport
+- une évolution plus facile vers WebSocket, auth complète ou tests de use cases
+
+Structure :
+
+- `server/api/*` : adaptateurs HTTP
+- `server/modules/forum/http/*` : validation HTTP et traduction d'erreurs
+- `server/modules/forum/application/*` : use cases
+- `server/modules/forum/domain/*` : règles pures
+- `server/modules/forum/infrastructure/*` : Prisma, session, slugs
+
+Pourquoi ne pas faire une hexagonale complète :
+
+- le projet reste un backend intégré dans Nuxt
+- Prisma est l'unique accès aux données
+- une hexagonale stricte ajouterait beaucoup de cérémonie trop tôt
+
+Pourquoi ne pas rester sur une couche service unique :
+
+- les frontières d'autorisation deviennent floues
+- les DTO SSR contaminent vite toute la logique
+- l'arrivée du WebSocket et de l'auth complète ferait grossir un monolithe
+  difficile à tester et faire évoluer
+
+### Points pratiques retirés du refactor
+
+Quelques décisions concrètes se sont imposées pendant le travail :
+
+- les use cases ne doivent pas dépendre de `h3`
+- la traduction entre erreurs applicatives et erreurs HTTP doit être centralisée
+- l'autorisation admin ne doit pas vivre seulement dans les handlers
+- la lecture SSR ne doit pas faire confiance aveuglément aux données minimales
+  du cookie si un rôle peut changer en base
+- les détails Prisma doivent rester dans l'infrastructure plutôt que remonter
+  dans tous les fichiers applicatifs
+
+En pratique, cela a conduit à :
+
+- un wrapper HTTP commun pour transformer les erreurs applicatives en réponses
+  HTTP
+- des use cases admin qui revalident eux-mêmes les privilèges
+- une relecture de l'utilisateur en base même pour la lecture SSR lorsqu'une
+  session existe
 
 ## Autorisation minimale
 
-L'etape 6 traitera les parcours complets d'inscription et de connexion, mais la
-couche serveur de l'etape 5 doit deja savoir proteger les routes d'ecriture.
+L'étape 6 traitera les parcours complets d'inscription et de connexion, mais la
+couche serveur de l'étape 5 doit déjà savoir protéger les routes d'écriture.
 
-Choix retenu:
+Choix retenu :
 
 - lecture publique sans session
-- routes d'ecriture protegees par `requireUserSession`
-- routes admin protegees par `requireAdminActor`
-- les routes protegees relisent l'utilisateur courant en base avant autorisation
+- routes d'écriture protégées par l'auth serveur
+- routes admin revalidées dans les use cases applicatifs
+- les routes protégées relisent l'utilisateur courant en base avant autorisation
 
-Pourquoi relire la base:
+Pourquoi relire la base :
 
-- la session stockee en cookie doit rester minimale
-- le role peut changer
-- un utilisateur peut etre supprime
-- pour une route sensible, il vaut mieux verifier l'etat courant que faire
-  confiance aveuglement au cookie
+- la session stockée en cookie doit rester minimale
+- le rôle peut changer
+- un utilisateur peut être supprimé
+- pour une route sensible, il vaut mieux vérifier l'état courant que faire
+  confiance aveuglément au cookie
 
-La session attendue pour la suite du projet est donc volontairement petite:
+La session attendue pour la suite du projet est donc volontairement petite :
 
 - `id`
 - `username`
@@ -339,33 +490,33 @@ La session attendue pour la suite du projet est donc volontairement petite:
 
 ## Pagination
 
-Choix retenu:
+Choix retenu :
 
 - 20 sujets par page
 - 20 messages par page
-- validation stricte du parametre `page`
-- 404 si la page demandee depasse le nombre total de pages
+- validation stricte du paramètre `page`
+- 404 si la page demandée dépasse le nombre total de pages
 
-Pourquoi:
+Pourquoi :
 
-- c'est le comportement demande par le sujet
-- cela evite d'avoir des pages "vides" ambigues
+- c'est le comportement demandé par le sujet
+- cela évite d'avoir des pages "vides" ambiguës
 - cela donne un contrat clair au front SSR
 
 ## Slugs et renommage
 
-Choix retenu:
+Choix retenu :
 
-- slug genere cote serveur a la creation
-- gestion des collisions avec suffixes numeriques
+- slug généré côté serveur à la création
+- gestion des collisions avec suffixes numériques
 - renommage d'un forum sans changer son slug
 
-Pourquoi conserver le slug lors d'un renommage:
+Pourquoi conserver le slug lors d'un renommage :
 
-- un changement de nom ne doit pas casser les URLs deja partagees
-- on evite d'introduire tout de suite une couche de redirection ou
+- un changement de nom ne doit pas casser les URLs déjà partagées
+- on évite d'introduire tout de suite une couche de redirection ou
   d'historisation des anciens slugs
-- c'est plus stable pour un forum SSR dont les liens vont vite etre references
+- c'est plus stable pour un forum SSR dont les liens vont vite être référencés
 
 ## Moderation des messages
 

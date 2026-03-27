@@ -1,9 +1,10 @@
-import { getForumPage } from '#server/services/forum-service'
-import { getViewerSessionUser } from '#server/utils/forum-auth'
-import { validateForumSlugParams, validatePageQuery } from '#server/utils/forum-validation'
-import { defineEventHandler, getValidatedQuery, getValidatedRouterParams } from 'h3'
+import { getForumPage } from '#server/modules/forum/application/queries/get-forum-page'
+import { defineForumHttpHandler } from '#server/modules/forum/http/handler'
+import { validateForumSlugParams, validatePageQuery } from '#server/modules/forum/http/validation'
+import { getViewerSessionUser } from '#server/modules/forum/infrastructure/session'
+import { getValidatedQuery, getValidatedRouterParams } from 'h3'
 
-export default defineEventHandler(async (event) => {
+export default defineForumHttpHandler(async (event) => {
   const { forumSlug } = await getValidatedRouterParams(event, validateForumSlugParams)
   const { page } = await getValidatedQuery(event, validatePageQuery)
   const viewer = await getViewerSessionUser(event)

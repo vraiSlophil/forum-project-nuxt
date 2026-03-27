@@ -1,13 +1,13 @@
-import { createAdminUser } from '#server/services/forum-service'
-import { requireAdminActor } from '#server/utils/forum-auth'
-import { validateCreateAdminUserInput } from '#server/utils/forum-validation'
-import { defineEventHandler, readValidatedBody, setResponseStatus } from 'h3'
+import { createAdminUser } from '#server/modules/forum/application/commands/admin/create-admin-user'
+import { defineForumHttpHandler } from '#server/modules/forum/http/handler'
+import { validateCreateAdminUserInput } from '#server/modules/forum/http/validation'
+import { requireForumActor } from '#server/modules/forum/infrastructure/session'
+import { readValidatedBody, setResponseStatus } from 'h3'
 
-export default defineEventHandler(async (event) => {
-  await requireAdminActor(event)
-
+export default defineForumHttpHandler(async (event) => {
+  const actor = await requireForumActor(event)
   const input = await readValidatedBody(event, validateCreateAdminUserInput)
-  const result = await createAdminUser(input)
+  const result = await createAdminUser(actor, input)
 
   setResponseStatus(event, 201)
 
