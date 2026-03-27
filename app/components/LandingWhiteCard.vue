@@ -18,7 +18,7 @@ const kindClasses = {
 
 <template>
   <div
-    class="relative overflow-hidden border border-white/70 bg-white/70 shadow-[0_24px_70px_rgba(120,113,108,0.16)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/65 dark:shadow-[0_24px_70px_rgba(0,0,0,0.34)]"
+    class="relative overflow-hidden border border-[color-mix(in_srgb,var(--p-primary-color)_16%,white)] bg-white/70 shadow-[0_24px_70px_rgba(120,113,108,0.16)] backdrop-blur-2xl dark:border-[color-mix(in_srgb,var(--p-primary-color)_24%,transparent)] dark:bg-zinc-900/65 dark:shadow-[0_24px_70px_rgba(0,0,0,0.34)]"
     :class="kindClasses[props.kind]"
   >
     <div

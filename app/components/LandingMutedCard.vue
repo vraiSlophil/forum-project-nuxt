@@ -16,8 +16,10 @@ const paddingClasses = {
 }
 
 const toneClasses = {
-  default: 'border-zinc-200/80 bg-stone-50/80 dark:border-white/10 dark:bg-zinc-950/45',
-  inverse: 'border-white/10 bg-white/5 text-white dark:bg-white/5',
+  default:
+    'border-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] bg-stone-50/80 dark:border-[color-mix(in_srgb,var(--p-primary-color)_28%,transparent)] dark:bg-zinc-950/45',
+  inverse:
+    'border-[color-mix(in_srgb,var(--p-primary-color)_26%,transparent)] bg-white/5 text-white dark:bg-white/5',
 }
 </script>
 

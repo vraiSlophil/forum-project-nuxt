@@ -67,7 +67,7 @@ const trustPoints = [
 
     <header class="fixed inset-x-0 top-5 z-50 flex justify-center px-4">
       <nav
-        class="relative flex w-full max-w-6xl items-center justify-between gap-4 overflow-hidden rounded-full border border-white/70 bg-white/65 px-4 py-3 shadow-[0_18px_40px_rgba(120,113,108,0.14)] backdrop-blur-2xl dark:border-white/10 dark:bg-zinc-900/60 dark:shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
+        class="relative flex w-full max-w-6xl items-center justify-between gap-4 overflow-hidden rounded-full border border-[color-mix(in_srgb,var(--p-primary-color)_16%,white)] bg-white/65 px-4 py-3 shadow-[0_18px_40px_rgba(120,113,108,0.14)] backdrop-blur-2xl dark:border-[color-mix(in_srgb,var(--p-primary-color)_24%,transparent)] dark:bg-zinc-900/60 dark:shadow-[0_18px_40px_rgba(0,0,0,0.35)]"
       >
         <div
           class="pointer-events-none absolute inset-0 rounded-full opacity-40 mix-blend-soft-light [background-image:radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.45),transparent_32%),radial-gradient(circle_at_80%_0%,rgba(255,255,255,0.24),transparent_22%),radial-gradient(rgba(24,24,27,0.08)_0.7px,transparent_0.7px),radial-gradient(rgba(255,255,255,0.18)_0.55px,transparent_0.55px)] [background-position:center,center,0_0,4px_5px] [background-size:auto,auto,12px_12px,9px_9px] dark:opacity-30"
@@ -75,7 +75,7 @@ const trustPoints = [
 
         <div class="relative z-10 flex items-center gap-3">
           <div
-            class="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-950 text-white shadow-[0_16px_40px_rgba(28,25,23,0.2)] dark:bg-white dark:text-zinc-950"
+            class="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--p-primary-color)] text-[var(--p-primary-contrast-color)] shadow-[0_16px_40px_color-mix(in_srgb,var(--p-primary-color)_24%,transparent)]"
           >
             <LandingIcon
               name="forum"
@@ -105,20 +105,21 @@ const trustPoints = [
         </div>
 
         <div class="relative z-10 flex items-center gap-2">
-          <LandingPill
-            variant="ghost"
+          <LandingButton
+            variant="outlined"
+            size="sm"
             class="hidden sm:inline-flex"
           >
             Connexion
-          </LandingPill>
+          </LandingButton>
 
-          <LandingPill variant="solid">
-            <LandingIcon
-              name="person_add"
-              size="sm"
-            />
-            <span>Inscription</span>
-          </LandingPill>
+          <LandingButton
+            icon="person_add"
+            icon-size="sm"
+            size="sm"
+          >
+            Inscription
+          </LandingButton>
         </div>
       </nav>
     </header>
@@ -153,27 +154,20 @@ const trustPoints = [
             </div>
 
             <div class="mt-8 flex flex-wrap items-center gap-3">
-              <LandingPill
-                variant="solid"
+              <LandingButton
                 size="lg"
+                icon="person_add"
               >
-                <LandingIcon
-                  name="person_add"
-                  size="md"
-                />
-                <span>Creer un compte</span>
-              </LandingPill>
+                Creer un compte
+              </LandingButton>
 
-              <LandingPill
-                variant="glass"
+              <LandingButton
+                variant="outlined"
                 size="lg"
+                icon="login"
               >
-                <LandingIcon
-                  name="login"
-                  size="md"
-                />
-                <span>Se connecter</span>
-              </LandingPill>
+                Se connecter
+              </LandingButton>
             </div>
           </div>
 
@@ -185,7 +179,12 @@ const trustPoints = [
               padding="lg"
               class="mt-5"
             >
-              <LandingPill variant="inverse">Discussion vedette</LandingPill>
+              <LandingTag
+                tone="contrast"
+                icon="auto_awesome"
+              >
+                Discussion vedette
+              </LandingTag>
 
               <LandingHeading
                 as="h2"
@@ -248,9 +247,9 @@ const trustPoints = [
                     </p>
                   </div>
 
-                  <LandingPill variant="solid">
+                  <LandingTag tone="primary">
                     {{ forum.topics }}
-                  </LandingPill>
+                  </LandingTag>
                 </div>
               </LandingMutedCard>
             </div>
@@ -265,7 +264,12 @@ const trustPoints = [
         <div class="mx-auto grid w-full max-w-6xl items-center gap-10 lg:grid-cols-2 lg:gap-20">
           <LandingWhiteCard>
             <LandingMutedCard padding="lg">
-              <LandingPill variant="accent"> Publier simplement </LandingPill>
+              <LandingTag
+                tone="primary"
+                icon="edit_square"
+              >
+                Publier simplement
+              </LandingTag>
 
               <LandingHeading
                 as="h3"
@@ -367,7 +371,12 @@ const trustPoints = [
             kind="cta"
             class="text-center"
           >
-            <LandingPill variant="glass"> Rejoindre Horizon </LandingPill>
+            <LandingTag
+              tone="primary"
+              icon="groups"
+            >
+              Rejoindre Horizon
+            </LandingTag>
 
             <LandingHeading class="mx-auto mt-6 max-w-3xl">
               Rejoignez un forum pense pour garder les conversations utiles.
@@ -378,27 +387,20 @@ const trustPoints = [
             </p>
 
             <div class="mt-8 flex flex-wrap justify-center gap-3">
-              <LandingPill
-                variant="solid"
+              <LandingButton
                 size="lg"
+                icon="person_add"
               >
-                <LandingIcon
-                  name="person_add"
-                  size="md"
-                />
-                <span>Creer un compte</span>
-              </LandingPill>
+                Creer un compte
+              </LandingButton>
 
-              <LandingPill
-                variant="glass"
+              <LandingButton
+                variant="outlined"
                 size="lg"
+                icon="login"
               >
-                <LandingIcon
-                  name="login"
-                  size="md"
-                />
-                <span>Connexion</span>
-              </LandingPill>
+                Connexion
+              </LandingButton>
             </div>
           </LandingWhiteCard>
         </div>

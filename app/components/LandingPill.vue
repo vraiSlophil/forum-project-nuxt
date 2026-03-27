@@ -16,7 +16,8 @@ const variantClasses = {
   solid:
     'bg-zinc-950 text-white shadow-[0_18px_45px_rgba(28,25,23,0.24)] dark:bg-white dark:text-zinc-950',
   ghost: 'border border-transparent text-zinc-600 dark:text-zinc-300',
-  accent: 'bg-amber-100 text-amber-700 dark:bg-amber-300/10 dark:text-amber-200',
+  accent:
+    'bg-[var(--p-primary-100)] text-[var(--p-primary-700)] dark:bg-[color-mix(in_srgb,var(--p-primary-color)_16%,transparent)] dark:text-[var(--p-primary-300)]',
   inverse: 'bg-white/10 text-white/80 dark:bg-zinc-950/8 dark:text-zinc-700',
 }
 
