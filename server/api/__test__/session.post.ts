@@ -1,4 +1,4 @@
-import { findActorById } from '#server/modules/forum/infrastructure/forum-repository'
+import { findSessionActorById } from '#server/modules/auth/infrastructure/auth-repository'
 import { setAppUserSession } from '#server/utils/user-session'
 import { createError, defineEventHandler, readBody } from 'h3'
 
@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const actor = await findActorById(userId)
+  const actor = await findSessionActorById(userId)
 
   if (!actor) {
     throw createError({

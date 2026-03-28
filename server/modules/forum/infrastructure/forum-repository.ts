@@ -1,4 +1,4 @@
-import { Prisma, UserRole } from '#server/generated/prisma/client'
+import { Prisma } from '#server/generated/prisma/client'
 import { createUniqueForumSlug, createUniqueTopicSlug } from './slugs'
 import { usePrisma } from '#server/utils/prisma'
 import { FORUM_PAGE_SIZE } from '#shared/types/forum'
@@ -11,21 +11,6 @@ const userSummarySelect = {
 
 export function isUniqueConstraintError(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002'
-}
-
-export async function findActorById(userId: string) {
-  const prisma = usePrisma()
-
-  return prisma.user.findUnique({
-    where: {
-      id: userId,
-    },
-    select: {
-      id: true,
-      username: true,
-      role: true,
-    },
-  })
 }
 
 export async function listForumsWithTopicCount() {
@@ -482,37 +467,6 @@ export async function deleteForumRecord(forumId: string) {
   await prisma.forum.delete({
     where: {
       id: forumId,
-    },
-  })
-}
-
-export async function findUserByUsername(username: string) {
-  const prisma = usePrisma()
-
-  return prisma.user.findUnique({
-    where: {
-      username,
-    },
-    select: {
-      id: true,
-    },
-  })
-}
-
-export async function createAdminUserRecord(input: { username: string; passwordHash: string }) {
-  const prisma = usePrisma()
-
-  return prisma.user.create({
-    data: {
-      username: input.username,
-      passwordHash: input.passwordHash,
-      role: UserRole.ADMIN,
-    },
-    select: {
-      id: true,
-      username: true,
-      role: true,
-      createdAt: true,
     },
   })
 }

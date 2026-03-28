@@ -5,6 +5,28 @@ useSeoMeta({
     'Une landing page epuree pour convaincre les visiteurs de rejoindre un forum clair, vivant et accueillant.',
 })
 
+const { loggedIn, user, clear: clearSession, fetch: fetchUserSession } = useUserSession()
+
+await fetchUserSession()
+
+const primaryCtaLabel = computed(() => (loggedIn.value ? 'Mon compte' : 'Creer un compte'))
+const secondaryCtaLabel = computed(() => (loggedIn.value ? 'Deconnexion' : 'Se connecter'))
+const headerSecondaryLabel = computed(() => (loggedIn.value ? user.value?.username : 'Connexion'))
+
+async function handlePrimaryCta() {
+  await navigateTo(loggedIn.value ? '/account' : '/auth?mode=register')
+}
+
+async function handleSecondaryCta() {
+  if (loggedIn.value) {
+    await clearSession()
+    await navigateTo('/')
+    return
+  }
+
+  await navigateTo('/auth')
+}
+
 const navItems = [
   { label: 'Explorer', href: '#explorer' },
   { label: 'Participer', href: '#participer' },
@@ -86,7 +108,11 @@ const trustPoints = [
           <div>
             <p class="text-sm font-semibold tracking-[-0.03em]">Horizon Forum</p>
             <p class="text-xs text-zinc-500 dark:text-zinc-400">
-              Des conversations qui donnent envie de revenir
+              {{
+                loggedIn
+                  ? `Session de ${user?.username}`
+                  : 'Des conversations qui donnent envie de revenir'
+              }}
             </p>
           </div>
         </div>
@@ -109,16 +135,18 @@ const trustPoints = [
             variant="outlined"
             size="sm"
             class="hidden sm:inline-flex"
+            @click="handleSecondaryCta"
           >
-            Connexion
+            {{ headerSecondaryLabel }}
           </LandingButton>
 
           <LandingButton
             icon="person_add"
             icon-size="sm"
             size="sm"
+            @click="handlePrimaryCta"
           >
-            Inscription
+            {{ primaryCtaLabel }}
           </LandingButton>
         </div>
       </nav>
@@ -157,16 +185,18 @@ const trustPoints = [
               <LandingButton
                 size="lg"
                 icon="person_add"
+                @click="handlePrimaryCta"
               >
-                Creer un compte
+                {{ primaryCtaLabel }}
               </LandingButton>
 
               <LandingButton
                 variant="outlined"
                 size="lg"
                 icon="login"
+                @click="handleSecondaryCta"
               >
-                Se connecter
+                {{ secondaryCtaLabel }}
               </LandingButton>
             </div>
           </div>
@@ -390,16 +420,18 @@ const trustPoints = [
               <LandingButton
                 size="lg"
                 icon="person_add"
+                @click="handlePrimaryCta"
               >
-                Creer un compte
+                {{ primaryCtaLabel }}
               </LandingButton>
 
               <LandingButton
                 variant="outlined"
                 size="lg"
                 icon="login"
+                @click="handleSecondaryCta"
               >
-                Connexion
+                {{ secondaryCtaLabel }}
               </LandingButton>
             </div>
           </LandingWhiteCard>

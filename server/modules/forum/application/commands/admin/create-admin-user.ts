@@ -1,11 +1,12 @@
-import { requireAdminPrivileges } from '#server/modules/forum/application/shared/guards'
-import type { ForumActor } from '#server/modules/forum/domain/actors'
 import {
-  createAdminUserRecord,
+  createUserRecord,
   findUserByUsername,
   isUniqueConstraintError,
-} from '#server/modules/forum/infrastructure/forum-repository'
-import { hashForumPassword } from '#server/modules/forum/infrastructure/password'
+} from '#server/modules/auth/infrastructure/auth-repository'
+import { UserRole } from '#server/generated/prisma/client'
+import { requireAdminPrivileges } from '#server/modules/forum/application/shared/guards'
+import type { ForumActor } from '#server/modules/forum/domain/actors'
+import { hashAppPassword } from '#server/utils/password'
 import type { AdminUserResponse, CreateAdminUserInput } from '#shared/types/forum'
 import { createForumApplicationError } from '../../shared/errors'
 
@@ -22,9 +23,10 @@ export async function createAdminUser(
   }
 
   try {
-    const user = await createAdminUserRecord({
+    const user = await createUserRecord({
       username: input.username,
-      passwordHash: await hashForumPassword(input.password),
+      passwordHash: await hashAppPassword(input.password),
+      role: UserRole.ADMIN,
     })
 
     return {

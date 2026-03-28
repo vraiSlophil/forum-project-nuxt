@@ -11,6 +11,8 @@ const props = withDefaults(
     size?: LandingButtonSize
     align?: LandingButtonAlign
     fluid?: boolean
+    type?: ButtonProps['type']
+    disabled?: boolean
     icon?: string
     iconSize?: 'sm' | 'md' | 'lg'
   }>(),
@@ -19,6 +21,8 @@ const props = withDefaults(
     size: 'md',
     align: 'center',
     fluid: false,
+    type: 'button',
+    disabled: false,
     icon: undefined,
     iconSize: 'md',
   },
@@ -50,11 +54,12 @@ const sizeClasses: Record<LandingButtonSize, string> = {
 
 <template>
   <Button
-    type="button"
+    :type="props.type"
     rounded
     :variant="primeVariants[props.variant]"
     :size="primeSizes[props.size]"
     :fluid="props.fluid"
+    :disabled="props.disabled"
     class="!border !font-medium !tracking-[-0.02em] !transition !duration-200"
     :class="[
       variantClasses[props.variant],

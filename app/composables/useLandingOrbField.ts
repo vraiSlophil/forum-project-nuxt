@@ -175,7 +175,7 @@ export function useLandingOrbField(canvasRef: Ref<HTMLCanvasElement | null>) {
   }
 
   function createOrb(spec: OrbSpec, index: number): Orb {
-    const anchor = ORB_ANCHORS[index % ORB_ANCHORS.length]
+    const anchor = ORB_ANCHORS[index % ORB_ANCHORS.length] ?? ORB_ANCHORS[0]!
     const angle = Math.random() * Math.PI * 2
     const maxX = Math.max(spec.radius, viewportWidth - spec.radius)
     const maxY = Math.max(spec.radius, pageHeight - spec.radius)
@@ -200,7 +200,13 @@ export function useLandingOrbField(canvasRef: Ref<HTMLCanvasElement | null>) {
 
   function updateOrbSprites(specs = getActiveOrbSpecs()) {
     for (const [index, orb] of orbs.entries()) {
-      orb.sprite = createOrbSprite(specs[index].radius, getPalette(specs[index]))
+      const spec = specs[index]
+
+      if (!spec) {
+        continue
+      }
+
+      orb.sprite = createOrbSprite(spec.radius, getPalette(spec))
     }
   }
 
@@ -245,6 +251,11 @@ export function useLandingOrbField(canvasRef: Ref<HTMLCanvasElement | null>) {
 
     for (const [index, orb] of orbs.entries()) {
       const spec = specs[index]
+
+      if (!spec) {
+        continue
+      }
+
       const maxX = Math.max(spec.radius, nextViewportWidth - spec.radius)
       const maxY = Math.max(spec.radius, nextPageHeight - spec.radius)
 

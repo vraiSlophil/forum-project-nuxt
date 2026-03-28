@@ -488,6 +488,97 @@ La session attendue pour la suite du projet est donc volontairement petite :
 - `username`
 - `role`
 
+## Authentification et sessions
+
+### Objectif
+
+L'étape 6 impose de rendre opérationnels :
+
+- l'inscription
+- la connexion
+- la déconnexion
+- le changement de mot de passe
+- la gestion des rôles
+
+Le sujet demande une lecture publique du forum, mais réserve l'écriture et
+l'administration aux utilisateurs authentifiés selon leur rôle.
+
+### Choix retenu
+
+- session HTTP gérée côté serveur avec `nuxt-auth-utils`
+- payload de session minimal : `id`, `username`, `role`
+- inscription et connexion qui ouvrent immédiatement une session
+- déconnexion via la route de session fournie par `nuxt-auth-utils`
+- changement de mot de passe conditionné par la saisie de l'ancien mot de passe
+- création automatique du compte administrateur par défaut au démarrage si aucun
+  admin n'existe encore
+
+### Pourquoi garder une session minimale
+
+- le cookie ne doit pas devenir une copie partielle de la table `users`
+- les contrôles sensibles doivent continuer à relire l'utilisateur courant en
+  base
+- cela limite les risques de session obsolète si un rôle change ou si un compte
+  est supprimé
+
+### Pourquoi demander l'ancien mot de passe
+
+Le modèle `User` ne contient pas d'email. Donc :
+
+- pas de parcours fiable de réinitialisation par lien ou jeton envoyé par mail
+- pas de secret secondaire pour prouver l'identité hors session existante
+
+Le changement de mot de passe retenu est donc volontairement simple et
+défendable :
+
+- l'utilisateur doit être connecté
+- il doit fournir son mot de passe actuel
+- le nouveau mot de passe doit être différent de l'ancien
+
+Cela reste cohérent avec le besoin fonctionnel réel du projet, sans inventer un
+parcours de récupération de compte qui n'est pas supporté par le schéma.
+
+### Choix de hachage
+
+Le hachage des mots de passe est centralisé dans `server/utils/password.ts`.
+
+Choix retenu :
+
+- `argon2id`
+- via le driver `Argon` de `@adonisjs/hash`
+- avec le module natif `argon2` requis par ce driver
+
+Pourquoi :
+
+- `argon2id` est aujourd'hui le choix le plus défendable pour un mot de passe
+  applicatif
+- le format PHC produit est standard et portable
+- le changement de paramètres de coût pourra être géré plus tard sans changer
+  tous les appels métier
+
+Conséquence importante :
+
+- les use cases `register`, `login`, `change-password` et `create-admin-user`
+  dépendent tous du même adaptateur de hachage
+- le choix de l'algorithme ne fuit pas dans les handlers HTTP ni dans les pages
+
+### Placement des règles d'autorisation
+
+Point important confirmé pendant l'implémentation :
+
+- les règles d'autorisation ne doivent pas être dispersées entre pages,
+  composants et handlers HTTP
+
+Donc :
+
+- les pages pilotent l'expérience utilisateur
+- les handlers valident le transport et la session
+- les use cases applicatifs restent la frontière réelle d'autorisation
+
+Cela évite qu'un futur adaptateur, par exemple WebSocket ou script serveur,
+contourne accidentellement une règle métier simplement parce qu'il ne passe pas
+par le même handler HTTP.
+
 ## Pagination
 
 Choix retenu :
@@ -1064,7 +1155,7 @@ Quelques consequences importantes du modele:
 ## Points a garder en tete pour l'implementation
 
 - creation automatique du compte admin initial au premier demarrage
-- hash du mot de passe, jamais de mot de passe en clair en base
+- hash du mot de passe avec `argon2id`, jamais de mot de passe en clair en base
 - generation fiable des slugs et gestion des collisions
 - mise a jour de `topics.last_message_at` a chaque nouveau message
 - controle strict des droits pour l'edition, la suppression et le verrouillage

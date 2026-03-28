@@ -48,9 +48,7 @@ automatique. Toutes les variables d'environnement passent par `.env`. Le fichier
 
 ```bash
 cp .env.example .env
-docker compose run --rm app npm install
-docker compose run --rm app npm run db:migrate:deploy
-docker compose up
+docker compose up --build
 ```
 
 Application: `http://localhost:3000`
@@ -70,3 +68,9 @@ Notes:
 - l'URL Postgres est recomposée en code à partir de `POSTGRES_*`
 - avec Prisma 7, la connexion DB est portée par `prisma.config.ts`, pas par
   `schema.prisma`
+- le conteneur `app` installe les dépendances dans un volume Docker dédié au
+  premier démarrage
+- le client Prisma est généré automatiquement au démarrage du conteneur
+- le schéma Prisma est appliqué automatiquement avant le lancement de Nuxt
+- un compte administrateur par défaut est créé au premier démarrage : `admin` /
+  `admin`

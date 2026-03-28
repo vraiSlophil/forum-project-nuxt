@@ -23,7 +23,7 @@ abstraite.
 
 ## 6. Implémenter l'authentification et les autorisations
 
-fait : []
+fait : [x]
 
 Il faut rendre opérationnels l'inscription, la connexion, la déconnexion, le
 changement de mot de passe et la gestion des rôles.

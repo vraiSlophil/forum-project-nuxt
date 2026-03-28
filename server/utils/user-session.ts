@@ -1,9 +1,13 @@
+import type { AuthSessionUser } from '#shared/types/auth'
 import { createError, type H3Event, useSession } from 'h3'
 
-type UserSessionData = {
-  user?: unknown
-  [key: string]: unknown
+export interface AppUserSession {
+  id: string
+  user?: AuthSessionUser
+  loggedInAt?: string
 }
+
+type UserSessionData = Omit<AppUserSession, 'id'>
 
 function getSessionConfig() {
   return {
@@ -33,6 +37,23 @@ export async function setAppUserSession(event: H3Event, data: UserSessionData) {
   })
 
   return session.data
+}
+
+export async function replaceAppUserSession(event: H3Event, data: UserSessionData) {
+  const session = await useSession<UserSessionData>(event, getSessionConfig())
+
+  await session.clear()
+  await session.update(data)
+
+  return session.data
+}
+
+export async function clearAppUserSession(event: H3Event) {
+  const session = await useSession<UserSessionData>(event, getSessionConfig())
+
+  await session.clear()
+
+  return true
 }
 
 export async function requireAppUserSession(
