@@ -43,7 +43,7 @@ routes.
 
 ## 7. Construire les parcours SSR de lecture publique
 
-fait : []
+fait : [x]
 
 Il faut implémenter la navigation principale du forum en commençant par les
 pages consultables sans connexion.
@@ -63,7 +63,7 @@ par le serveur en fonction des besoins exacts de chaque page SSR.
 
 ## 8. Ajouter les parcours d'écriture côté utilisateur
 
-fait : []
+fait : [x]
 
 Il faut implémenter la création de sujet, la réponse à un sujet et l'édition de
 ses propres messages.

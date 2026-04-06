@@ -25,6 +25,7 @@ const errorMessage = ref('')
 const successMessage = ref('')
 
 const roleLabel = computed(() => (user.value?.role === 'ADMIN' ? 'Administrateur' : 'Membre'))
+const isAdmin = computed(() => user.value?.role === 'ADMIN')
 
 const formattedLoggedInAt = computed(() => {
   if (!session.value?.loggedInAt) {
@@ -126,6 +127,48 @@ async function logout() {
             Session ouverte le {{ formattedLoggedInAt }}.
           </p>
         </LandingDarkCard>
+
+        <LandingWhiteCard>
+          <LandingEyebrow>Actions rapides</LandingEyebrow>
+
+          <LandingHeading
+            as="h2"
+            size="card"
+            class="mt-4"
+          >
+            Où créer les ressources du forum
+          </LandingHeading>
+
+          <div class="mt-6 space-y-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
+            <p v-if="isAdmin">
+              En tant qu'administrateur, vous créez et gérez les forums depuis la page
+              Administration.
+            </p>
+            <p v-else>
+              En tant que membre, vous ne créez pas de forum. Ouvrez un forum existant pour créer un
+              sujet, puis ouvrez un sujet pour publier des messages.
+            </p>
+          </div>
+
+          <div class="mt-6 flex flex-wrap gap-3">
+            <LandingButton
+              v-if="isAdmin"
+              size="sm"
+              icon="admin_panel_settings"
+              @click="navigateTo('/admin')"
+            >
+              Gérer les forums
+            </LandingButton>
+
+            <LandingButton
+              size="sm"
+              icon="forum"
+              @click="navigateTo('/')"
+            >
+              Ouvrir les forums
+            </LandingButton>
+          </div>
+        </LandingWhiteCard>
       </div>
 
       <LandingWhiteCard
