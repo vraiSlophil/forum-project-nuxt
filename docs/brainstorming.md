@@ -85,6 +85,32 @@ docker compose build
 docker compose up
 ```
 
+## Ports Docker
+
+- les ports exposés sur l'hôte ont été changés par rapport aux valeurs les plus
+  classiques
+
+### raison
+
+- d'autres conteneurs tournent en parallèle sur la machine
+- garder `3000`, `5432` ou `8080` exposés sur l'hôte augmentait le risque de
+  conflit
+- l'objectif était donc d'éviter les collisions locales sans changer la
+  communication interne entre conteneurs
+
+### décision
+
+- conserver les ports standards à l'intérieur du réseau Docker
+- changer seulement les ports publiés sur l'hôte
+- séparer explicitement le port interne Postgres et le port exposé sur l'hôte
+
+### intérêt
+
+- plusieurs stacks Docker peuvent tourner en parallèle plus facilement
+- la configuration réseau interne reste simple et prévisible
+- l'application continue de parler à PostgreSQL sur `db:5432`, sans bricolage
+  côté code
+
 ## Première idée Docker
 
 - `/app` pour le code bindé

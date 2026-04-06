@@ -10,7 +10,7 @@ services:
     env_file:
       - .env
     ports:
-      - '${NUXT_PORT:-3000}:3000'
+      - '${NUXT_PORT:-3400}:3000'
     volumes:
       - .:/app
       - node_modules:/app/node_modules
@@ -28,7 +28,7 @@ services:
       retries: 10
       start_period: 5s
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '${POSTGRES_HOST_PORT:-55432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
@@ -40,7 +40,7 @@ services:
     environment:
       ADMINER_DEFAULT_SERVER: db
     ports:
-      - '${ADMINER_PORT:-8080}:8080'
+      - '${ADMINER_PORT:-18080}:8080'
 
 volumes:
   postgres_data:

@@ -51,14 +51,15 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Application: `http://localhost:3000`
+Application: `http://localhost:3400`
 
-Adminer: `http://localhost:8080`
+Adminer: `http://localhost:18080`
 
 PostgreSQL:
 
 - hôte: `db`
-- port: `5432`
+- port interne Docker: `5432`
+- port exposé sur l'hôte: `55432` via `POSTGRES_HOST_PORT`
 - base: `forum`
 - utilisateur: `forum`
 - mot de passe: `forum`
@@ -66,6 +67,8 @@ PostgreSQL:
 Notes:
 
 - l'URL Postgres est recomposée en code à partir de `POSTGRES_*`
+- `POSTGRES_PORT` est le port interne entre conteneurs ; `POSTGRES_HOST_PORT`
+  sert uniquement à l'exposition sur ta machine
 - avec Prisma 7, la connexion DB est portée par `prisma.config.ts`, pas par
   `schema.prisma`
 - le conteneur `app` installe les dépendances dans un volume Docker dédié au
