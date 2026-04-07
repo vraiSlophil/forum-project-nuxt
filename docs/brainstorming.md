@@ -722,6 +722,13 @@ Les tests d'intégration ne suffisent pas à valider :
 Les tests e2e ont donc été ajoutés pour exécuter de vrais appels HTTP contre le
 serveur du projet, avec PostgreSQL dans Docker.
 
+Point important d'isolement :
+
+- les e2e utilisent un schéma PostgreSQL dédié (`forum_test`)
+- la base de développement reste sur le schéma `public`
+- les resets de test ne peuvent donc plus effacer les données locales de
+  développement
+
 Ce qu'ils vérifient :
 
 - lecture publique
@@ -761,6 +768,7 @@ Cela a conduit à :
 - des scripts `test:prepare`, `test:integration` et `test:e2e`
 - un démarrage explicite du serveur Nuxt dans les tests e2e
 - un helper de seed Prisma pour les scénarios e2e
+- un schéma `forum_test` pour séparer les resets e2e de la base de dev
 - une route `__test__/session` activée seulement avec
   `FORUM_ENABLE_TEST_ROUTES=1`
 

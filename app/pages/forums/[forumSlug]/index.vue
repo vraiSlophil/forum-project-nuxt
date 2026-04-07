@@ -120,47 +120,32 @@ async function submitTopic() {
               <LandingPill variant="accent">
                 {{ formatCount(forumPage.pagination.totalItems, 'sujet') }}
               </LandingPill>
-              <LandingPill
+              <div
                 v-if="isAuthenticated"
                 variant="glass"
               >
-                Vous pouvez creer un sujet
-              </LandingPill>
+                <LandingButton
+                  icon="add_comment"
+                  @click="isComposerOpen = !isComposerOpen"
+                >
+                  {{ isComposerOpen ? 'Fermer' : 'Nouveau sujet' }}
+                </LandingButton>
+
+                <LandingButton
+                  v-if="canManageForum"
+                  variant="outlined"
+                  icon="admin_panel_settings"
+                  @click="navigateTo('/admin')"
+                >
+                  Gérer les forums
+                </LandingButton>
+              </div>
             </div>
           </div>
         </LandingWhiteCard>
 
-        <LandingWhiteCard v-if="canCreateTopic">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <LandingEyebrow>Nouveau sujet</LandingEyebrow>
-              <p class="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                Ouvrez un sujet avec un titre et un premier message, comme le demande le sujet du
-                projet.
-              </p>
-            </div>
-
-            <LandingButton
-              size="sm"
-              icon="add_comment"
-              @click="isComposerOpen = !isComposerOpen"
-            >
-              {{ isComposerOpen ? 'Fermer' : 'Nouveau sujet' }}
-            </LandingButton>
-
-            <LandingButton
-              v-if="canManageForum"
-              variant="outlined"
-              size="sm"
-              icon="admin_panel_settings"
-              @click="navigateTo('/admin')"
-            >
-              Gérer les forums
-            </LandingButton>
-          </div>
-
+        <LandingWhiteCard v-if="canCreateTopic && isComposerOpen">
           <form
-            v-if="isComposerOpen"
             class="mt-6 space-y-4"
             @submit.prevent="submitTopic"
           >
@@ -214,7 +199,7 @@ async function submitTopic() {
           </form>
         </LandingWhiteCard>
 
-        <LandingWhiteCard v-else>
+        <LandingWhiteCard v-else-if="!isAuthenticated">
           <LandingEyebrow>Participation</LandingEyebrow>
           <LandingHeading
             as="h2"

@@ -9,12 +9,23 @@ import { getForumServerUrl, startForumServer, stopForumServer } from './utils/se
 
 process.env.NODE_ENV = 'test'
 process.env.FORUM_ENABLE_TEST_ROUTES = '1'
+process.env.POSTGRES_SCHEMA = 'forum_test'
 
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
 async function requestJson(path: string, init?: RequestInit) {
   const response = await fetch(`${getForumServerUrl()}${path}`, init)
   const body = (await response.json()) as JsonValue
+
+  return {
+    response,
+    body,
+  }
+}
+
+async function requestText(path: string, init?: RequestInit) {
+  const response = await fetch(`${getForumServerUrl()}${path}`, init)
+  const body = await response.text()
 
   return {
     response,
@@ -127,6 +138,54 @@ describe('forum server API', () => {
     })
 
     expect(createdTopic?.messages).toHaveLength(1)
+  })
+
+  it('creates a reply for an authenticated user', async () => {
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const { response, body } = await requestJson('/api/forums/general/topics/bienvenue/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
+      },
+      body: JSON.stringify({
+        content: 'Deuxième message du sujet',
+      }),
+    })
+
+    expect(response.status).toBe(201)
+    expect(body).toMatchObject({
+      topic: {
+        forumSlug: 'general',
+        slug: 'bienvenue',
+      },
+      message: {
+        page: 1,
+      },
+    })
+
+    const topic = await getTestPrisma().topic.findUnique({
+      where: {
+        forumId_slug: {
+          forumId: '00000000-0000-4000-8000-000000000010',
+          slug: 'bienvenue',
+        },
+      },
+      include: {
+        messages: true,
+      },
+    })
+
+    expect(topic?.messages).toHaveLength(2)
+  })
+
+  it('renders the topic detail page with its messages', async () => {
+    const { response, body } = await requestText('/forums/general/topics/bienvenue')
+
+    expect(response.status).toBe(200)
+    expect(body).toContain('Bienvenue')
+    expect(body).toContain('Premier message')
+    expect(body).toContain('Connectez-vous pour repondre')
   })
 
   it('returns 403 when a regular user hits an admin route', async () => {

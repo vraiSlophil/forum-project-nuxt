@@ -13,6 +13,7 @@ export default defineConfig({
       POSTGRES_HOST: env('POSTGRES_HOST'),
       POSTGRES_PASSWORD: env('POSTGRES_PASSWORD'),
       POSTGRES_PORT: env('POSTGRES_PORT'),
+      POSTGRES_SCHEMA: process.env.POSTGRES_SCHEMA,
       POSTGRES_USER: env('POSTGRES_USER'),
     }),
   },
