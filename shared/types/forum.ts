@@ -106,6 +106,17 @@ export interface TopicMessage {
   }
 }
 
+export type TopicMessageRealtimeEventType =
+  | 'message.created'
+  | 'message.updated'
+  | 'message.deleted'
+
+export interface TopicMessageRealtimeEvent {
+  topicId: string
+  type: TopicMessageRealtimeEventType
+  message: TopicMessage
+}
+
 export interface ForumsResponse {
   viewer: ForumViewer
   forums: ForumSummary[]

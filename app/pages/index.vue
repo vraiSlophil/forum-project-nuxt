@@ -9,19 +9,14 @@ useSeoMeta({
 })
 
 const forumsResponse = await $fetch<ForumsResponse>('/api/forums')
-const { fetch: fetchUserSession, loggedIn, user } = useUserSession()
-
-await fetchUserSession()
+const viewerStateSource = await useForumViewer(() => forumsResponse.viewer)
+const viewerState = reactive(viewerStateSource)
 
 const totalTopics = computed(() =>
   forumsResponse.forums.reduce((total, forum) => total + forum.topicCount, 0),
 )
 
-const isAuthenticated = computed(() => forumsResponse.viewer.isAuthenticated || loggedIn.value)
-const sessionUsername = computed(() => user.value?.username ?? forumsResponse.viewer.username)
-const canOpenAdmin = computed(
-  () => forumsResponse.viewer.isAdmin || (loggedIn.value && user.value?.role === 'ADMIN'),
-)
+const canOpenAdmin = computed(() => viewerState.isAdmin)
 const firstForumPath = computed(() => {
   const firstForum = forumsResponse.forums[0]
 
@@ -34,7 +29,7 @@ const firstForumPath = computed(() => {
     class="min-h-dvh bg-[linear-gradient(180deg,#fbf7ef_0%,#f4eee5_52%,#eee6db_100%)] text-zinc-950 dark:bg-[linear-gradient(180deg,#0b0b0c_0%,#101114_48%,#16181d_100%)] dark:text-zinc-100"
   >
     <LandingOrbField />
-    <ForumTopbar :viewer="forumsResponse.viewer" />
+    <ForumTopbar :viewer="viewerState.effectiveViewer" />
 
     <main class="relative z-10 px-6 pb-20 pt-8 lg:px-10">
       <div class="mx-auto flex max-w-6xl flex-col gap-8">
@@ -84,8 +79,8 @@ const firstForumPath = computed(() => {
 
               <p class="mt-5 text-sm leading-7 text-white/70 dark:text-zinc-300">
                 {{
-                  isAuthenticated
-                    ? `Session active pour ${sessionUsername}.`
+                  viewerState.isAuthenticated
+                    ? `Session active pour ${viewerState.username}.`
                     : 'Connectez-vous pour participer aux discussions.'
                 }}
               </p>
@@ -110,10 +105,10 @@ const firstForumPath = computed(() => {
                 </LandingButton>
 
                 <LandingButton
-                  v-else-if="!isAuthenticated"
+                  v-else-if="!viewerState.isAuthenticated"
                   size="sm"
                   icon="login"
-                  @click="navigateTo('/auth')"
+                  @click="viewerState.goToAuth"
                 >
                   Se connecter
                 </LandingButton>

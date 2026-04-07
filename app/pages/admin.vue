@@ -30,6 +30,8 @@ if (user.value?.role !== 'ADMIN') {
 
 const forumsEndpoint: string = '/api/forums'
 const forumsResponse = ref<ForumsResponse>(await $fetch<ForumsResponse>(forumsEndpoint))
+const viewerStateSource = await useForumViewer(() => forumsResponse.value.viewer)
+const viewerState = reactive(viewerStateSource)
 
 const createForumForm = reactive<CreateForumInput>({
   name: '',
@@ -171,7 +173,7 @@ async function deleteForum(forumId: string, forumName: string) {
   <div
     class="min-h-dvh bg-[linear-gradient(180deg,#fbf7ef_0%,#f4eee5_52%,#eee6db_100%)] text-zinc-950 dark:bg-[linear-gradient(180deg,#0b0b0c_0%,#101114_48%,#16181d_100%)] dark:text-zinc-100"
   >
-    <ForumTopbar :viewer="forumsResponse.viewer" />
+    <ForumTopbar :viewer="viewerState.effectiveViewer" />
 
     <main class="px-6 pb-20 pt-8 lg:px-10">
       <div class="mx-auto flex max-w-6xl flex-col gap-6">

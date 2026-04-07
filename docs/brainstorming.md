@@ -803,6 +803,110 @@ Au-delà de la couverture technique, cette stratégie confirme plusieurs points 
 - les cas illégaux ne sont pas traités seulement "par convention"
 - le backend peut être validé dans Docker de façon reproductible
 
+## Factorisation front du forum
+
+### Doc vérifiée avant refactor
+
+Points revérifiés dans la documentation officielle Nuxt :
+
+- `app/composables/` pour l'auto-import de composables d'application
+- `useState` comme état réactif partagé et compatible SSR
+
+Le but était d'éviter deux écueils :
+
+- dupliquer la même logique de session, de création et d'édition dans plusieurs
+  pages
+- introduire trop tôt un store global lourd alors que le besoin reste très
+  localisé au forum
+
+### Choix retenu
+
+Le front du forum a été refactoré autour de trois composables orientés cas
+d'usage :
+
+- `useForumViewer` pour l'état de session réellement affiché dans l'interface
+- `useForumPage` pour le formulaire de création de sujet
+- `useTopicThread` pour la liste de messages, la réponse, l'édition et les
+  extensions futures du sujet
+
+La présentation d'un message a été sortie dans un composant dédié :
+
+- `ForumMessageCard`
+
+### Pourquoi des composables plutôt qu'un store global
+
+Le besoin n'imposait pas encore un store transverse de type Pinia.
+
+Raisons :
+
+- l'état concerné reste centré sur quelques pages du forum
+- la topbar, la page forum et la page sujet n'ont pas besoin d'un énorme objet
+  global partagé partout
+- un store global aurait mélangé état de session affiché, formulaire de sujet,
+  édition de message, citation en préparation et futur temps réel
+- des composables ciblés gardent des frontières plus simples à lire et à faire
+  évoluer
+
+Le seul état réellement partagé entre plusieurs composants sur une même page a
+été porté par `useState` dans `useTopicThread`, ce qui reste cohérent avec la
+doc Nuxt :
+
+- état sérialisable
+- compatible SSR
+- réutilisable sans créer un singleton manuel risqué côté serveur
+
+### Composant de message
+
+Le composant `ForumMessageCard` a été introduit pour sortir de la page sujet :
+
+- l'affichage d'un message
+- l'affichage d'une citation existante
+- les actions d'édition, suppression et citation
+- l'état visuel "citation prête"
+
+Cela évite que la page sujet devienne un template monolithique difficile à faire
+évoluer lorsque d'autres comportements UI arriveront.
+
+### Préparation de la citation
+
+La citation n'est pas implémentée de bout en bout pour l'instant, mais le
+terrain a été préparé.
+
+Choix retenu :
+
+- le clic sur `Citer` prépare un brouillon local avec `messageId`, auteur et
+  contenu
+- la réponse continue pour l'instant à n'envoyer que `content`
+- l'UI indique explicitement que `quotedMessageId` sera branché quand le contrat
+  serveur de réponse l'acceptera
+
+Pourquoi cette étape intermédiaire :
+
+- ne pas casser le flux actuel de réponse
+- préparer proprement l'évolution sans bricolage dans le template
+- garder l'identifiant du message cité déjà disponible au bon endroit
+
+### Préparation du temps réel
+
+Le temps réel via WebSocket n'est pas encore branché, mais un point d'extension
+clair a été introduit.
+
+Choix retenu :
+
+- un type partagé `TopicMessageRealtimeEvent`
+- un nom de canal calculé par sujet
+- une fonction `applyRealtimeEvent` dans `useTopicThread`
+
+L'idée est la suivante :
+
+- quand le WebSocket sera ajouté, l'abonnement traduira les messages réseau en
+  `TopicMessageRealtimeEvent`
+- la mise à jour locale des messages restera centralisée dans le composable
+- la page sujet n'aura pas à porter elle-même la logique de fusion temps réel
+
+Cela réduit le risque que le futur temps réel duplique la logique déjà utilisée
+par les actions HTTP classiques.
+
 - question sur l'intérêt du Vue / Nuxt DevTools
 - constat : utiles pour debug
 - mais pas indispensables au projet

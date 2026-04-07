@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import type {
-  CreateTopicInput,
-  ForumPageResponse,
-  TopicMutationResponse,
-} from '#shared/types/forum'
-import { readApiErrorMessage } from '~/utils/api-error'
+import type { ForumPageResponse } from '#shared/types/forum'
 import { formatCount, formatForumDateTime, readPageQueryParam } from '~/utils/forum-ui'
 
 definePageMeta({
@@ -14,70 +9,24 @@ definePageMeta({
 const route = useRoute()
 const forumSlug = String(route.params.forumSlug)
 const pageQuery = readPageQueryParam(route.query.page)
-const { fetch: fetchUserSession, loggedIn, user } = useUserSession()
-
-await fetchUserSession()
-
 const forumPage = await $fetch<ForumPageResponse>(`/api/forums/${forumSlug}`, {
   query: pageQuery ? { page: pageQuery } : undefined,
 })
+const viewerStateSource = await useForumViewer(() => forumPage.viewer)
+const viewerState = reactive(viewerStateSource)
+const forumState = reactive(useForumPage(forumPage, viewerStateSource))
 
 useSeoMeta({
   title: `${forumPage.forum.name} | Horizon Forum`,
   description: forumPage.forum.description ?? `Liste des sujets du forum ${forumPage.forum.name}.`,
 })
-
-const topicForm = reactive<CreateTopicInput>({
-  title: '',
-  content: '',
-})
-
-const isComposerOpen = ref(
-  forumPage.forum.permissions.canCreateTopic && forumPage.topics.length === 0,
-)
-const isSubmitting = ref(false)
-const submitError = ref('')
-
-const forumPath = `/forums/${forumPage.forum.slug}`
-const isAuthenticated = computed(() => forumPage.viewer.isAuthenticated || loggedIn.value)
-const canCreateTopic = computed(() => forumPage.forum.permissions.canCreateTopic || loggedIn.value)
-const canManageForum = computed(() => forumPage.viewer.isAdmin || user.value?.role === 'ADMIN')
-
-async function goToAuth() {
-  await navigateTo('/auth')
-}
-
-async function goToRegister() {
-  await navigateTo('/auth?mode=register')
-}
-
-async function submitTopic() {
-  isSubmitting.value = true
-  submitError.value = ''
-
-  try {
-    const result = await $fetch<TopicMutationResponse>(
-      `/api/forums/${forumPage.forum.slug}/topics`,
-      {
-        method: 'POST',
-        body: topicForm,
-      },
-    )
-
-    await navigateTo(result.redirectTo)
-  } catch (error) {
-    submitError.value = readApiErrorMessage(error, 'Creation du sujet impossible')
-  } finally {
-    isSubmitting.value = false
-  }
-}
 </script>
 
 <template>
   <div
     class="min-h-dvh bg-[linear-gradient(180deg,#fbf7ef_0%,#f4eee5_52%,#eee6db_100%)] text-zinc-950 dark:bg-[linear-gradient(180deg,#0b0b0c_0%,#101114_48%,#16181d_100%)] dark:text-zinc-100"
   >
-    <ForumTopbar :viewer="forumPage.viewer" />
+    <ForumTopbar :viewer="viewerState.effectiveViewer" />
 
     <main class="px-6 pb-20 pt-8 lg:px-10">
       <div class="mx-auto flex max-w-6xl flex-col gap-6">
@@ -121,39 +70,39 @@ async function submitTopic() {
                 {{ formatCount(forumPage.pagination.totalItems, 'sujet') }}
               </LandingPill>
               <div
-                v-if="isAuthenticated"
-                variant="glass"
+                v-if="viewerState.isAuthenticated"
+                class="flex flex-wrap gap-3"
               >
                 <LandingButton
                   icon="add_comment"
-                  @click="isComposerOpen = !isComposerOpen"
+                  @click="forumState.toggleComposer"
                 >
-                  {{ isComposerOpen ? 'Fermer' : 'Nouveau sujet' }}
+                  {{ forumState.isComposerOpen ? 'Fermer' : 'Nouveau sujet' }}
                 </LandingButton>
 
                 <LandingButton
-                  v-if="canManageForum"
+                  v-if="forumState.canManageForum"
                   variant="outlined"
                   icon="admin_panel_settings"
-                  @click="navigateTo('/admin')"
+                  @click="viewerState.goToAdmin"
                 >
-                  Gérer les forums
+                  Gerer les forums
                 </LandingButton>
               </div>
             </div>
           </div>
         </LandingWhiteCard>
 
-        <LandingWhiteCard v-if="canCreateTopic && isComposerOpen">
+        <LandingWhiteCard v-if="forumState.canCreateTopic && forumState.isComposerOpen">
           <form
             class="mt-6 space-y-4"
-            @submit.prevent="submitTopic"
+            @submit.prevent="forumState.submitTopic"
           >
             <p
-              v-if="submitError"
+              v-if="forumState.submitError"
               class="rounded-[1.4rem] border border-rose-200/70 bg-rose-50/80 px-4 py-3 text-sm font-medium text-rose-700 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-200"
             >
-              {{ submitError }}
+              {{ forumState.submitError }}
             </p>
 
             <div class="space-y-2">
@@ -165,7 +114,7 @@ async function submitTopic() {
               </label>
               <input
                 id="topic-title"
-                v-model="topicForm.title"
+                v-model="forumState.topicForm.title"
                 type="text"
                 class="w-full rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-[var(--p-primary-color)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] dark:border-white/10 dark:bg-zinc-950/70 dark:text-white dark:focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)]"
                 placeholder="Titre du sujet"
@@ -181,7 +130,7 @@ async function submitTopic() {
               </label>
               <textarea
                 id="topic-content"
-                v-model="topicForm.content"
+                v-model="forumState.topicForm.content"
                 rows="6"
                 class="w-full rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-[var(--p-primary-color)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] dark:border-white/10 dark:bg-zinc-950/70 dark:text-white dark:focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)]"
                 placeholder="Premier message du sujet"
@@ -192,14 +141,14 @@ async function submitTopic() {
               type="submit"
               size="lg"
               icon="send"
-              :disabled="isSubmitting"
+              :disabled="forumState.isSubmitting"
             >
-              {{ isSubmitting ? 'Publication...' : 'Publier le sujet' }}
+              {{ forumState.isSubmitting ? 'Publication...' : 'Publier le sujet' }}
             </LandingButton>
           </form>
         </LandingWhiteCard>
 
-        <LandingWhiteCard v-else-if="!isAuthenticated">
+        <LandingWhiteCard v-else-if="!viewerState.isAuthenticated">
           <LandingEyebrow>Participation</LandingEyebrow>
           <LandingHeading
             as="h2"
@@ -216,24 +165,24 @@ async function submitTopic() {
             <LandingButton
               size="sm"
               icon="person_add"
-              @click="goToRegister"
+              @click="viewerState.goToRegister"
             >
               Creer un compte
             </LandingButton>
             <LandingButton
               variant="outlined"
               size="sm"
-              @click="goToAuth"
+              @click="viewerState.goToAuth"
             >
               Se connecter
             </LandingButton>
 
             <LandingButton
-              v-if="canManageForum"
+              v-if="forumState.canManageForum"
               variant="outlined"
               size="sm"
               icon="admin_panel_settings"
-              @click="navigateTo('/admin')"
+              @click="viewerState.goToAdmin"
             >
               Administration
             </LandingButton>
@@ -244,7 +193,7 @@ async function submitTopic() {
           <NuxtLink
             v-for="topic in forumPage.topics"
             :key="topic.id"
-            :to="`${forumPath}/topics/${topic.slug}`"
+            :to="`${forumState.forumPath}/topics/${topic.slug}`"
             class="block transition hover:-translate-y-1"
           >
             <LandingWhiteCard>
@@ -312,7 +261,7 @@ async function submitTopic() {
             </LandingHeading>
             <p class="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
               {{
-                isAuthenticated
+                viewerState.isAuthenticated
                   ? 'Vous pouvez ouvrir le premier sujet de ce forum.'
                   : 'Connectez-vous pour lancer la premiere discussion.'
               }}
@@ -321,7 +270,7 @@ async function submitTopic() {
         </div>
 
         <ForumPagination
-          :base-path="forumPath"
+          :base-path="forumState.forumPath"
           :pagination="forumPage.pagination"
         />
       </div>

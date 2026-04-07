@@ -4,24 +4,7 @@ import type { ForumViewer } from '#shared/types/forum'
 const props = defineProps<{
   viewer: ForumViewer
 }>()
-
-const { clear, fetch: fetchUserSession, loggedIn, user } = useUserSession()
-
-await fetchUserSession()
-
-const effectiveViewer = computed<ForumViewer>(() => {
-  if (!loggedIn.value || !user.value) {
-    return props.viewer
-  }
-
-  return {
-    isAuthenticated: true,
-    userId: user.value.id,
-    username: user.value.username,
-    role: user.value.role,
-    isAdmin: user.value.role === 'ADMIN',
-  }
-})
+const { clear } = useUserSession()
 
 async function goToAuth() {
   await navigateTo('/auth')
@@ -67,8 +50,8 @@ async function logout() {
           <p class="text-sm font-semibold tracking-[-0.03em]">Horizon Forum</p>
           <p class="text-xs text-zinc-500 dark:text-zinc-400">
             {{
-              effectiveViewer.isAuthenticated
-                ? `Session de ${effectiveViewer.username}`
+              props.viewer.isAuthenticated
+                ? `Session de ${props.viewer.username}`
                 : 'Lecture publique, publication avec compte'
             }}
           </p>
@@ -77,7 +60,7 @@ async function logout() {
 
       <div class="flex items-center gap-2">
         <LandingTag
-          v-if="effectiveViewer.isAdmin"
+          v-if="props.viewer.isAdmin"
           tone="contrast"
           size="sm"
           icon="verified_user"
@@ -86,7 +69,7 @@ async function logout() {
         </LandingTag>
 
         <LandingButton
-          v-if="effectiveViewer.isAdmin"
+          v-if="props.viewer.isAdmin"
           variant="outlined"
           size="sm"
           @click="goToAdmin"
@@ -95,7 +78,7 @@ async function logout() {
         </LandingButton>
 
         <LandingButton
-          v-if="!effectiveViewer.isAuthenticated"
+          v-if="!props.viewer.isAuthenticated"
           variant="outlined"
           size="sm"
           @click="goToAuth"
@@ -104,7 +87,7 @@ async function logout() {
         </LandingButton>
 
         <LandingButton
-          v-if="!effectiveViewer.isAuthenticated"
+          v-if="!props.viewer.isAuthenticated"
           size="sm"
           icon="person_add"
           @click="goToRegister"
@@ -113,7 +96,7 @@ async function logout() {
         </LandingButton>
 
         <LandingButton
-          v-if="effectiveViewer.isAuthenticated"
+          v-if="props.viewer.isAuthenticated"
           variant="outlined"
           size="sm"
           @click="goToAccount"
@@ -122,7 +105,7 @@ async function logout() {
         </LandingButton>
 
         <LandingButton
-          v-if="effectiveViewer.isAuthenticated"
+          v-if="props.viewer.isAuthenticated"
           size="sm"
           icon="logout"
           @click="logout"
