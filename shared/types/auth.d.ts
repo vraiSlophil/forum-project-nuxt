@@ -1,6 +1,7 @@
 import type { AuthSessionUser } from './auth'
 
 declare module '#auth-utils' {
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
   interface User extends AuthSessionUser {}
 
   interface UserSession {

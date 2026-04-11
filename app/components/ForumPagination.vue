@@ -12,7 +12,7 @@ const visiblePages = computed(() => {
   const currentPage = props.pagination.page
 
   let start = Math.max(1, currentPage - 2)
-  let end = Math.min(totalPages, start + 4)
+  const end = Math.min(totalPages, start + 4)
 
   start = Math.max(1, end - 4)
 
