@@ -30,28 +30,28 @@
   "dependencies": {
     "@adonisjs/hash": "^10.1.0",
     "@primeuix/themes": "^2.0.3",
-    "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.5.0",
-    "@tailwindcss/vite": "^4.2.1",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "@tailwindcss/vite": "^4.2.2",
     "argon2": "^0.43.1",
     "nuxt": "^4.4.2",
     "nuxt-auth-utils": "^0.5.29",
     "pg": "^8.20.0",
     "primevue": "^4.5.4",
     "vue": "^3.5.30",
-    "vue-router": "^5.0.3"
+    "vue-router": "^5.0.4"
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.15.2",
-    "@primevue/nuxt-module": "^4.5.4",
-    "dotenv": "^17.3.1",
-    "eslint": "^10.0.3",
+    "@primevue/nuxt-module": "^4.5.5",
+    "dotenv": "^17.4.1",
+    "eslint": "^10.2.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
-    "prettier": "^3.8.1",
-    "prisma": "^7.5.0",
+    "prettier": "^3.8.2",
+    "prisma": "^7.7.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.2",
+    "vitest": "^4.1.4",
     "vue-tsc": "^3.2.6"
   }
 }
