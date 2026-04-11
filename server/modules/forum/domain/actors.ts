@@ -33,3 +33,15 @@ export function canEditMessage(
 
   return isAdminActor(viewer) || viewer.id === authorId
 }
+
+export function canDeleteOwnMessage(
+  viewer: SessionForumUser | null,
+  authorId: string,
+  isDeleted: boolean,
+) {
+  if (!viewer || isDeleted) {
+    return false
+  }
+
+  return viewer.id === authorId
+}

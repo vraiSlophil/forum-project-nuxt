@@ -102,7 +102,8 @@ export interface TopicMessage {
   quotedMessage: QuotedMessageSummary | null
   permissions: {
     canEdit: boolean
-    canDelete: boolean
+    canDeleteOwn: boolean
+    canModerate: boolean
   }
 }
 
@@ -158,6 +159,12 @@ export interface UpdateMessageInput {
   content: string
 }
 
+export interface ModerateMessageInput {
+  action: 'moderate-delete'
+}
+
+export type PatchMessageInput = UpdateMessageInput | ModerateMessageInput
+
 export interface CreateForumInput {
   name: string
   description: string | null
@@ -197,6 +204,11 @@ export interface MessageMutationResponse {
   message: MessageLocation & {
     editedAt: string | null
   }
+  redirectTo: string
+}
+
+export interface MessageDeletionResponse {
+  topic: TopicMutationTopicSummary
   redirectTo: string
 }
 

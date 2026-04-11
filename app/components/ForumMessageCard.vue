@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import type { TopicMessage } from '#shared/types/forum'
+import type { ForumMessageAction } from '~/components/ForumMessageActionDial.vue'
 import { formatForumDateTime } from '~/utils/forum-ui'
 
 const props = defineProps<{
-  canDelete: boolean
   canQuote: boolean
   editContent: string
   editError: string
   editPending: boolean
   isEditing: boolean
   isQuotePrepared: boolean
+  showModerationMenu: boolean
   message: TopicMessage
 }>()
 
 const emit = defineEmits<{
-  delete: [messageId: string]
+  'delete-own': [messageId: string]
+  'moderate-delete': [messageId: string]
   'select-quote': [message: TopicMessage]
   'save-edit': [messageId: string]
   'start-edit': [message: TopicMessage]
@@ -30,10 +32,75 @@ const editContentModel = computed({
 function handleQuoteClick() {
   emit('select-quote', props.message)
 }
+
+const userActions = computed<ForumMessageAction[]>(() => {
+  const actions: ForumMessageAction[] = []
+
+  if (props.canQuote) {
+    actions.push({
+      key: 'quote',
+      label: 'Citer ce message',
+      icon: 'format_quote',
+      onSelect: handleQuoteClick,
+    })
+  }
+
+  if (props.message.permissions.canEdit) {
+    actions.push({
+      key: 'edit',
+      label: 'Modifier ce message',
+      icon: 'edit',
+      onSelect: () => emit('start-edit', props.message),
+    })
+  }
+
+  if (props.message.permissions.canDeleteOwn) {
+    actions.push({
+      key: 'delete',
+      label: 'Supprimer ce message',
+      icon: 'delete',
+      tone: 'danger',
+      onSelect: () => emit('delete-own', props.message.id),
+    })
+  }
+
+  return actions
+})
+
+const moderationActions = computed<ForumMessageAction[]>(() => {
+  if (!props.showModerationMenu || !props.message.permissions.canModerate) {
+    return []
+  }
+
+  const actions: ForumMessageAction[] = []
+
+  if (props.message.permissions.canEdit) {
+    actions.push({
+      key: 'moderation-edit',
+      label: 'Modifier en tant que moderateur',
+      icon: 'edit',
+      tone: 'moderation',
+      onSelect: () => emit('start-edit', props.message),
+    })
+  }
+
+  actions.push({
+    key: 'moderate-delete',
+    label: 'Supprimer par moderation',
+    icon: 'gavel',
+    tone: 'moderation',
+    onSelect: () => emit('moderate-delete', props.message.id),
+  })
+
+  return actions
+})
 </script>
 
 <template>
-  <LandingWhiteCard :id="`message-${props.message.id}`">
+  <LandingWhiteCard
+    :id="`message-${props.message.id}`"
+    class="overflow-visible"
+  >
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-4">
         <div
@@ -80,36 +147,21 @@ function handleQuoteClick() {
         </div>
       </div>
 
-      <div class="flex flex-wrap gap-2">
-        <LandingButton
-          v-if="props.canQuote"
-          variant="outlined"
-          size="sm"
-          icon="format_quote"
-          @click="handleQuoteClick"
-        >
-          Citer
-        </LandingButton>
+      <div class="flex items-start gap-2">
+        <ForumMessageActionDial
+          v-if="moderationActions.length > 0"
+          trigger-icon="admin_panel_settings"
+          trigger-label="Ouvrir les actions de moderation"
+          variant="moderation"
+          :actions="moderationActions"
+        />
 
-        <LandingButton
-          v-if="props.message.permissions.canEdit"
-          variant="outlined"
-          size="sm"
-          icon="edit"
-          @click="emit('start-edit', props.message)"
-        >
-          Modifier
-        </LandingButton>
-
-        <LandingButton
-          v-if="props.canDelete"
-          variant="outlined"
-          size="sm"
-          icon="delete"
-          @click="emit('delete', props.message.id)"
-        >
-          Supprimer
-        </LandingButton>
+        <ForumMessageActionDial
+          v-if="userActions.length > 0"
+          trigger-icon="more_horiz"
+          trigger-label="Ouvrir les actions du message"
+          :actions="userActions"
+        />
       </div>
     </div>
 

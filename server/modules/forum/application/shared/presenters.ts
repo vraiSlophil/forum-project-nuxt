@@ -1,4 +1,5 @@
 import {
+  canDeleteOwnMessage,
   canEditMessage,
   canModerate,
   isAdminActor,
@@ -22,15 +23,19 @@ function buildTopicPath(forumSlug: string, topicSlug: string) {
   return `/forums/${forumSlug}/topics/${topicSlug}`
 }
 
+export function buildTopicRedirect(forumSlug: string, topicSlug: string, page: number) {
+  const pageSuffix = page > 1 ? `?page=${page}` : ''
+
+  return `${buildTopicPath(forumSlug, topicSlug)}${pageSuffix}`
+}
+
 export function buildMessageRedirect(
   forumSlug: string,
   topicSlug: string,
   page: number,
   messageId: string,
 ) {
-  const pageSuffix = page > 1 ? `?page=${page}` : ''
-
-  return `${buildTopicPath(forumSlug, topicSlug)}${pageSuffix}#message-${messageId}`
+  return `${buildTopicRedirect(forumSlug, topicSlug, page)}#message-${messageId}`
 }
 
 export function presentViewer(viewer: SessionForumUser | null): ForumViewer {
@@ -142,7 +147,8 @@ export function presentTopicMessage(
       : null,
     permissions: {
       canEdit: canEditMessage(viewer, message.authorId, isDeleted),
-      canDelete: canModerate(viewer) && !isDeleted,
+      canDeleteOwn: canDeleteOwnMessage(viewer, message.authorId, isDeleted),
+      canModerate: canModerate(viewer) && !isDeleted,
     },
   }
 }

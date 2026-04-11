@@ -15,6 +15,8 @@ const props = withDefaults(
     disabled?: boolean
     icon?: string
     iconSize?: 'sm' | 'md' | 'lg'
+    iconOnly?: boolean
+    ariaLabel?: string
   }>(),
   {
     variant: 'primary',
@@ -25,6 +27,8 @@ const props = withDefaults(
     disabled: false,
     icon: undefined,
     iconSize: 'md',
+    iconOnly: false,
+    ariaLabel: undefined,
   },
 )
 
@@ -50,6 +54,12 @@ const sizeClasses: Record<LandingButtonSize, string> = {
   md: '!text-sm',
   lg: '!text-base',
 }
+
+const iconOnlySizeClasses: Record<LandingButtonSize, string> = {
+  sm: '!h-9 !w-9',
+  md: '!h-11 !w-11',
+  lg: '!h-12 !w-12',
+}
 </script>
 
 <template>
@@ -60,20 +70,25 @@ const sizeClasses: Record<LandingButtonSize, string> = {
     :size="primeSizes[props.size]"
     :fluid="props.fluid"
     :disabled="props.disabled"
+    :aria-label="props.ariaLabel"
     class="!border !font-medium !tracking-[-0.02em] !transition !duration-200"
     :class="[
       variantClasses[props.variant],
-      sizeClasses[props.size],
+      props.iconOnly ? iconOnlySizeClasses[props.size] : sizeClasses[props.size],
       props.align === 'start' ? '!justify-start' : '',
+      props.iconOnly ? '!justify-center !px-0' : '',
     ]"
   >
-    <span class="inline-flex items-center gap-2">
+    <span
+      class="inline-flex items-center"
+      :class="props.iconOnly ? '' : 'gap-2'"
+    >
       <LandingIcon
         v-if="props.icon"
         :name="props.icon"
         :size="props.iconSize"
       />
-      <slot />
+      <slot v-if="!props.iconOnly" />
     </span>
   </Button>
 </template>

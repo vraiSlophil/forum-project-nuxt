@@ -179,6 +179,57 @@ describe('forum server API', () => {
     expect(topic?.messages).toHaveLength(2)
   })
 
+  it('hard deletes an author message through DELETE /api/messages/:id', async () => {
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const { response, body } = await requestJson(
+      '/api/messages/00000000-0000-4000-8000-000000000030',
+      {
+        method: 'DELETE',
+        headers: {
+          cookie,
+        },
+      },
+    )
+
+    expect(response.status).toBe(200)
+    expect(body).toMatchObject({
+      redirectTo: '/forums/general/topics/bienvenue',
+    })
+
+    const deletedMessage = await getTestPrisma().message.findUnique({
+      where: {
+        id: '00000000-0000-4000-8000-000000000030',
+      },
+    })
+
+    expect(deletedMessage).toBeNull()
+  })
+
+  it('moderates a message through PATCH /api/messages/:id', async () => {
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000001')
+    const { response } = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
+      },
+      body: JSON.stringify({
+        action: 'moderate-delete',
+      }),
+    })
+
+    expect(response.status).toBe(200)
+
+    const moderatedMessage = await getTestPrisma().message.findUnique({
+      where: {
+        id: '00000000-0000-4000-8000-000000000030',
+      },
+    })
+
+    expect(moderatedMessage?.deletedAt).not.toBeNull()
+    expect(moderatedMessage?.content).toBe('Premier message')
+  })
+
   it('renders the quoted message inside the topic page after a quoted reply', async () => {
     const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
     const { response } = await requestJson('/api/forums/general/topics/bienvenue/messages', {

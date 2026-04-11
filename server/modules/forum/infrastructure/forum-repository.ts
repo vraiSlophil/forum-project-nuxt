@@ -377,6 +377,37 @@ export async function findMessageForUpdate(messageId: string) {
   })
 }
 
+export async function findMessageForDelete(messageId: string) {
+  const prisma = usePrisma()
+
+  return prisma.message.findUnique({
+    where: {
+      id: messageId,
+    },
+    select: {
+      id: true,
+      topicId: true,
+      authorId: true,
+      createdAt: true,
+      deletedAt: true,
+      topic: {
+        select: {
+          id: true,
+          forumId: true,
+          title: true,
+          slug: true,
+          createdAt: true,
+          forum: {
+            select: {
+              slug: true,
+            },
+          },
+        },
+      },
+    },
+  })
+}
+
 export async function updateMessageContent(messageId: string, content: string, editedAt: Date) {
   const prisma = usePrisma()
 
@@ -391,6 +422,63 @@ export async function updateMessageContent(messageId: string, content: string, e
     select: {
       editedAt: true,
     },
+  })
+}
+
+export async function deleteMessageRecord(input: { messageId: string; topicId: string }) {
+  const prisma = usePrisma()
+
+  return prisma.$transaction(async (transaction) => {
+    await transaction.message.delete({
+      where: {
+        id: input.messageId,
+      },
+    })
+
+    const latestMessage = await transaction.message.findFirst({
+      where: {
+        topicId: input.topicId,
+      },
+      orderBy: [
+        {
+          createdAt: 'desc',
+        },
+        {
+          id: 'desc',
+        },
+      ],
+      select: {
+        createdAt: true,
+      },
+    })
+
+    const topic = await transaction.topic.findUniqueOrThrow({
+      where: {
+        id: input.topicId,
+      },
+      select: {
+        createdAt: true,
+      },
+    })
+
+    await transaction.topic.update({
+      where: {
+        id: input.topicId,
+      },
+      data: {
+        lastMessageAt: latestMessage?.createdAt ?? topic.createdAt,
+      },
+    })
+
+    const totalMessages = await transaction.message.count({
+      where: {
+        topicId: input.topicId,
+      },
+    })
+
+    return {
+      totalMessages,
+    }
   })
 }
 

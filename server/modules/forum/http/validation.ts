@@ -1,4 +1,5 @@
 import type {
+  PatchMessageInput,
   CreateAdminUserInput,
   CreateForumInput,
   CreateMessageInput,
@@ -259,6 +260,20 @@ export function validateCreateMessageInput(value: unknown): CreateMessageInput {
 
 export function validateUpdateMessageInput(value: unknown): UpdateMessageInput {
   const body = readObject(value, 'request body')
+
+  return {
+    content: readRequiredString(body.content, 'content'),
+  }
+}
+
+export function validatePatchMessageInput(value: unknown): PatchMessageInput {
+  const body = readObject(value, 'request body')
+
+  if (body.action === 'moderate-delete') {
+    return {
+      action: 'moderate-delete',
+    }
+  }
 
   return {
     content: readRequiredString(body.content, 'content'),

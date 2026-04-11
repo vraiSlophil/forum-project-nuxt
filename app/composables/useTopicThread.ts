@@ -1,5 +1,6 @@
 import type {
   CreateMessageInput,
+  MessageDeletionResponse,
   MessageMutationResponse,
   TopicMessage,
   TopicMessageRealtimeEvent,
@@ -58,7 +59,6 @@ function sortMessages(messages: TopicMessage[]) {
 }
 
 export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicViewerState) {
-  const route = useRoute()
   const topicPath = `/forums/${topicPage.forum.slug}/topics/${topicPage.topic.slug}`
   const forumPath = `/forums/${topicPage.forum.slug}`
   const topicApiPath = `/api/forums/${topicPage.forum.slug}/topics/${topicPage.topic.slug}`
@@ -149,6 +149,57 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     mergeRealtimeMessage(event.message)
   }
 
+  function unlinkQuotedMessageLocally(messageId: string) {
+    messages.value = messages.value.map((message) =>
+      message.quotedMessage?.id === messageId
+        ? {
+            ...message,
+            quotedMessage: null,
+          }
+        : message,
+    )
+  }
+
+  function removeMessageLocally(messageId: string) {
+    messages.value = messages.value.filter((message) => message.id !== messageId)
+    unlinkQuotedMessageLocally(messageId)
+
+    if (editingMessageId.value === messageId) {
+      cancelEditing()
+    }
+
+    if (preparedQuote.value?.messageId === messageId) {
+      clearQuote()
+    }
+  }
+
+  function markMessageModeratedLocally(messageId: string) {
+    const deletedAt = new Date().toISOString()
+
+    messages.value = messages.value.map((message) => {
+      if (message.id !== messageId) {
+        return message
+      }
+
+      return {
+        ...message,
+        content: 'Ce message a ete supprime par la moderation.',
+        deletedAt,
+        isDeleted: true,
+        permissions: {
+          ...message.permissions,
+          canDeleteOwn: false,
+          canEdit: false,
+          canModerate: false,
+        },
+      }
+    })
+
+    if (preparedQuote.value?.messageId === messageId) {
+      clearQuote()
+    }
+  }
+
   async function submitReply() {
     replyPending.value = true
     replyError.value = ''
@@ -207,25 +258,39 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     }
   }
 
-  async function deleteMessage(messageId: string) {
+  async function deleteOwnMessage(messageId: string) {
     if (!window.confirm('Supprimer ce message ?')) {
       return
     }
 
     try {
-      await $fetch(`/api/admin/messages/${messageId}`, {
+      const result = await $fetch<MessageDeletionResponse>(`/api/messages/${messageId}`, {
         method: 'DELETE',
       })
 
-      if (preparedQuote.value?.messageId === messageId) {
-        clearQuote()
-      }
-
-      await navigateTo(route.fullPath, {
-        replace: true,
-      })
+      removeMessageLocally(messageId)
+      await navigateTo(result.redirectTo, { replace: true })
     } catch (error) {
       editError.value = readApiErrorMessage(error, 'Suppression du message impossible')
+    }
+  }
+
+  async function moderateMessage(messageId: string) {
+    if (!window.confirm('Supprimer ce message au titre de la moderation ?')) {
+      return
+    }
+
+    try {
+      await $fetch(`/api/messages/${messageId}`, {
+        method: 'PATCH',
+        body: {
+          action: 'moderate-delete',
+        },
+      })
+
+      markMessageModeratedLocally(messageId)
+    } catch (error) {
+      editError.value = readApiErrorMessage(error, 'Suppression de moderation impossible')
     }
   }
 
@@ -236,7 +301,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     canReply,
     cancelEditing,
     clearQuote,
-    deleteMessage,
+    deleteOwnMessage,
     deleteTopic,
     editError,
     editForm,
@@ -245,6 +310,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     forumPath,
     isReplyOpen,
     messages,
+    moderateMessage,
     prepareQuote,
     preparedQuote,
     realtimeChannel,

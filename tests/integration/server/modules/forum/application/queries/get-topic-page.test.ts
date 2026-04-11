@@ -89,12 +89,14 @@ describe('getTopicPage', () => {
     expect(result.messages).toHaveLength(2)
     expect(result.messages[0].permissions).toEqual({
       canEdit: true,
-      canDelete: false,
+      canDeleteOwn: true,
+      canModerate: false,
     })
     expect(result.messages[1].content).toBe('Ce message a ete supprime par la moderation.')
     expect(result.messages[1].permissions).toEqual({
       canEdit: false,
-      canDelete: false,
+      canDeleteOwn: false,
+      canModerate: false,
     })
     expect(result.pagination).toEqual({
       page: 1,
