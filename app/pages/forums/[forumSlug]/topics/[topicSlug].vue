@@ -20,7 +20,14 @@ const topicPage = await $fetch<TopicPageResponse>(`/api/forums/${forumSlug}/topi
 })
 const viewerStateSource = await useForumViewer(() => topicPage.viewer)
 const viewerState = reactive(viewerStateSource)
-const threadState = reactive(useTopicThread(topicPage, viewerStateSource))
+const threadStateSource = useTopicThread(topicPage, viewerStateSource)
+const threadState = reactive(threadStateSource)
+const preparedQuote = computed(() => threadStateSource.preparedQuote.value)
+const preparedQuoteMessageId = computed(() => threadStateSource.selectedQuoteMessageId.value)
+
+function handleQuote(message: TopicPageResponse['messages'][number]) {
+  threadStateSource.prepareQuote(message)
+}
 
 useSeoMeta({
   title: `${topicPage.topic.title} | ${topicPage.forum.name}`,
@@ -112,11 +119,11 @@ useSeoMeta({
             :edit-error="threadState.editError"
             :edit-pending="threadState.editPending"
             :is-editing="threadState.editingMessageId === message.id"
-            :is-quote-prepared="threadState.quoteDraft?.messageId === message.id"
+            :is-quote-prepared="preparedQuoteMessageId === message.id"
             :message="message"
             @cancel-edit="threadState.cancelEditing"
             @delete="threadState.deleteMessage"
-            @quote="threadState.prepareQuote"
+            @select-quote="handleQuote"
             @save-edit="threadState.submitEdit"
             @start-edit="threadState.startEditing"
             @update:edit-content="threadState.setEditContent"
@@ -159,6 +166,40 @@ useSeoMeta({
             </div>
           </div>
 
+          <div
+            v-if="preparedQuote"
+            class="mt-6 rounded-[1.5rem] border border-zinc-200/70 bg-zinc-50/80 px-4 py-4 text-sm text-zinc-600 dark:border-white/10 dark:bg-zinc-950/35 dark:text-zinc-300"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p class="font-semibold text-zinc-900 dark:text-white">
+                  Citation preparee de {{ preparedQuote.authorUsername }}
+                </p>
+                <p class="mt-2 whitespace-pre-wrap leading-7">
+                  {{ preparedQuote.content }}
+                </p>
+                <p
+                  v-if="!preparedQuote.isLoaded"
+                  class="mt-2 text-xs leading-6 text-zinc-500 dark:text-zinc-400"
+                >
+                  Le message cité n'est pas chargé sur cette page pour l'instant.
+                </p>
+                <p class="mt-1 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
+                  La citation sera reprise dans le message publie.
+                </p>
+              </div>
+
+              <LandingButton
+                variant="outlined"
+                size="sm"
+                icon="close"
+                @click.prevent="threadState.clearQuote"
+              >
+                Retirer
+              </LandingButton>
+            </div>
+          </div>
+
           <form
             v-if="threadState.isReplyOpen"
             class="mt-6 space-y-4"
@@ -170,35 +211,6 @@ useSeoMeta({
             >
               {{ threadState.replyError }}
             </p>
-
-            <div
-              v-if="threadState.quoteDraft"
-              class="rounded-[1.5rem] border border-zinc-200/70 bg-zinc-50/80 px-4 py-4 text-sm text-zinc-600 dark:border-white/10 dark:bg-zinc-950/35 dark:text-zinc-300"
-            >
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p class="font-semibold text-zinc-900 dark:text-white">
-                    Citation preparee de {{ threadState.quoteDraft.authorUsername }}
-                  </p>
-                  <p class="mt-2 whitespace-pre-wrap leading-7">
-                    {{ threadState.quoteDraft.content }}
-                  </p>
-                  <p class="mt-2 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-                    La selection est prete, mais `quotedMessageId` ne sera branche que quand l'API
-                    de reponse le supportera.
-                  </p>
-                </div>
-
-                <LandingButton
-                  variant="outlined"
-                  size="sm"
-                  icon="close"
-                  @click.prevent="threadState.clearQuote"
-                >
-                  Retirer
-                </LandingButton>
-              </div>
-            </div>
 
             <div class="space-y-2">
               <label

@@ -151,6 +151,7 @@ export interface CreateTopicInput {
 
 export interface CreateMessageInput {
   content: string
+  quotedMessageId?: string | null
 }
 
 export interface UpdateMessageInput {

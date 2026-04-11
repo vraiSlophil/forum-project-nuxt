@@ -179,6 +179,30 @@ describe('forum server API', () => {
     expect(topic?.messages).toHaveLength(2)
   })
 
+  it('renders the quoted message inside the topic page after a quoted reply', async () => {
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const { response } = await requestJson('/api/forums/general/topics/bienvenue/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
+      },
+      body: JSON.stringify({
+        content: 'Je cite le premier message',
+        quotedMessageId: '00000000-0000-4000-8000-000000000030',
+      }),
+    })
+
+    expect(response.status).toBe(201)
+
+    const { response: pageResponse, body } = await requestText('/forums/general/topics/bienvenue')
+
+    expect(pageResponse.status).toBe(200)
+    expect(body).toContain('Citation de alice')
+    expect(body).toContain('Premier message')
+    expect(body).toContain('Je cite le premier message')
+  })
+
   it('renders the topic detail page with its messages', async () => {
     const { response, body } = await requestText('/forums/general/topics/bienvenue')
 

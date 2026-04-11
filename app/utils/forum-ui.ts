@@ -13,6 +13,7 @@ export function buildPageHref(path: string, page: number) {
 export function formatForumDate(value: string) {
   return new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'medium',
+    timeZone: 'Europe/Paris',
   }).format(new Date(value))
 }
 
@@ -20,6 +21,7 @@ export function formatForumDateTime(value: string) {
   return new Intl.DateTimeFormat('fr-FR', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'Europe/Paris',
   }).format(new Date(value))
 }
 

@@ -17,6 +17,7 @@ type TopicViewerState = {
 export interface PreparedTopicQuote {
   authorUsername: string
   content: string
+  isLoaded: boolean
   messageId: string
 }
 
@@ -66,12 +67,8 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     `topic-messages:${topicPage.topic.id}:${topicPage.pagination.page}`,
     () => cloneMessages(topicPage.messages),
   )
-  const quoteDraft = useState<PreparedTopicQuote | null>(
+  const preparedQuote = useState<PreparedTopicQuote | null>(
     `topic-quote:${topicPage.topic.id}`,
-    () => null,
-  )
-  const replyQuotedMessageId = useState<string | null>(
-    `topic-quote-target:${topicPage.topic.id}`,
     () => null,
   )
 
@@ -99,6 +96,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     () => topicPage.topic.permissions.canDelete || viewerState.isAdmin.value,
   )
   const realtimeChannel = computed(() => `topics:${topicPage.topic.id}:messages`)
+  const selectedQuoteMessageId = computed(() => preparedQuote.value?.messageId ?? null)
 
   function setEditContent(value: string) {
     editForm.content = value
@@ -117,19 +115,18 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
   }
 
   function prepareQuote(message: TopicMessage) {
-    quoteDraft.value = {
+    preparedQuote.value = {
       authorUsername: message.author.username,
       content: message.content,
+      isLoaded: true,
       messageId: message.id,
     }
-    replyQuotedMessageId.value = message.id
     isReplyOpen.value = true
     replyError.value = ''
   }
 
   function clearQuote() {
-    quoteDraft.value = null
-    replyQuotedMessageId.value = null
+    preparedQuote.value = null
   }
 
   function mergeRealtimeMessage(message: TopicMessage) {
@@ -161,6 +158,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
         method: 'POST',
         body: {
           content: replyForm.content,
+          quotedMessageId: preparedQuote.value?.messageId ?? null,
         },
       })
 
@@ -219,7 +217,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
         method: 'DELETE',
       })
 
-      if (quoteDraft.value?.messageId === messageId) {
+      if (preparedQuote.value?.messageId === messageId) {
         clearQuote()
       }
 
@@ -248,11 +246,12 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     isReplyOpen,
     messages,
     prepareQuote,
-    quoteDraft,
+    preparedQuote,
     realtimeChannel,
     replyError,
     replyForm,
     replyPending,
+    selectedQuoteMessageId,
     setEditContent,
     startEditing,
     submitEdit,

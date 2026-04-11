@@ -148,6 +148,34 @@ function readUuid(value: unknown, field: string) {
   return uuid
 }
 
+function readOptionalUuid(value: unknown, field: string) {
+  if (value === undefined || value === null) {
+    return null
+  }
+
+  if (typeof value !== 'string') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Field "${field}" must be a string`,
+    })
+  }
+
+  const uuid = value.trim()
+
+  if (!uuid) {
+    return null
+  }
+
+  if (!UUID_PATTERN.test(uuid)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Field "${field}" must be a valid UUID`,
+    })
+  }
+
+  return uuid
+}
+
 export function validatePageQuery(value: unknown): PageQuery {
   const query = readObject(value, 'query')
   const rawPage = query.page
@@ -225,6 +253,7 @@ export function validateCreateMessageInput(value: unknown): CreateMessageInput {
 
   return {
     content: readRequiredString(body.content, 'content'),
+    quotedMessageId: readOptionalUuid(body.quotedMessageId, 'quotedMessageId'),
   }
 }
 

@@ -15,7 +15,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   delete: [messageId: string]
-  quote: [message: TopicMessage]
+  'select-quote': [message: TopicMessage]
   'save-edit': [messageId: string]
   'start-edit': [message: TopicMessage]
   'update:edit-content': [value: string]
@@ -26,6 +26,10 @@ const editContentModel = computed({
   get: () => props.editContent,
   set: (value: string) => emit('update:edit-content', value),
 })
+
+function handleQuoteClick() {
+  emit('select-quote', props.message)
+}
 </script>
 
 <template>
@@ -82,7 +86,7 @@ const editContentModel = computed({
           variant="outlined"
           size="sm"
           icon="format_quote"
-          @click="emit('quote', props.message)"
+          @click="handleQuoteClick"
         >
           Citer
         </LandingButton>
@@ -111,12 +115,20 @@ const editContentModel = computed({
 
     <div
       v-if="props.message.quotedMessage"
-      class="mt-5 rounded-[1.5rem] border border-zinc-200/70 bg-zinc-50/80 px-4 py-4 text-sm text-zinc-600 dark:border-white/10 dark:bg-zinc-950/35 dark:text-zinc-300"
+      class="mt-5 rounded-[1.3rem] border border-zinc-200/70 bg-zinc-50/55 px-4 py-3 text-sm text-zinc-600 dark:border-white/10 dark:bg-zinc-950/30 dark:text-zinc-300"
     >
-      <p class="font-semibold text-zinc-900 dark:text-white">
-        Citation de {{ props.message.quotedMessage.author.username }}
-      </p>
-      <p class="mt-2 whitespace-pre-wrap leading-7">
+      <div
+        class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-400"
+      >
+        <LandingIcon
+          name="format_quote"
+          size="sm"
+        />
+        <span>Citation de {{ props.message.quotedMessage.author.username }}</span>
+      </div>
+      <p
+        class="mt-2 whitespace-pre-wrap border-l-2 border-[color-mix(in_srgb,var(--p-primary-color)_48%,white)] pl-3 text-sm leading-6 text-zinc-700 dark:border-[color-mix(in_srgb,var(--p-primary-color)_42%,transparent)] dark:text-zinc-200"
+      >
         {{ props.message.quotedMessage.content }}
       </p>
     </div>
@@ -164,5 +176,12 @@ const editContentModel = computed({
     >
       {{ props.message.content }}
     </div>
+
+    <p
+      v-if="props.isQuotePrepared"
+      class="mt-4 text-xs font-medium uppercase tracking-[0.14em] text-[var(--p-primary-color)]"
+    >
+      Message sélectionné pour la citation
+    </p>
   </LandingWhiteCard>
 </template>

@@ -4,6 +4,7 @@ import type { ForumActor } from '#server/modules/forum/domain/actors'
 import {
   createReplyAndUpdateTopic,
   findForumBySlug,
+  findQuotedMessageInTopic,
   findTopicForReply,
 } from '#server/modules/forum/infrastructure/forum-repository'
 import type { CreateMessageInput, TopicMutationResponse } from '#shared/types/forum'
@@ -31,11 +32,20 @@ export async function createReply(
     throw createForumApplicationError('TOPIC_LOCKED')
   }
 
+  if (input.quotedMessageId) {
+    const quotedMessage = await findQuotedMessageInTopic(topic.id, input.quotedMessageId)
+
+    if (!quotedMessage) {
+      throw createForumApplicationError('MESSAGE_NOT_FOUND')
+    }
+  }
+
   const result = await createReplyAndUpdateTopic({
     topicId: topic.id,
     authorId: actor.id,
     content: input.content,
     createdAt: new Date(),
+    quotedMessageId: input.quotedMessageId ?? null,
   })
   const page = calculatePageFromPosition(result.totalMessages)
 

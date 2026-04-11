@@ -286,11 +286,26 @@ export async function findTopicForReply(forumId: string, topicSlug: string) {
   })
 }
 
+export async function findQuotedMessageInTopic(topicId: string, messageId: string) {
+  const prisma = usePrisma()
+
+  return prisma.message.findFirst({
+    where: {
+      id: messageId,
+      topicId,
+    },
+    select: {
+      id: true,
+    },
+  })
+}
+
 export async function createReplyAndUpdateTopic(input: {
   topicId: string
   authorId: string
   content: string
   createdAt: Date
+  quotedMessageId: string | null
 }) {
   const prisma = usePrisma()
 
@@ -301,6 +316,7 @@ export async function createReplyAndUpdateTopic(input: {
         authorId: input.authorId,
         content: input.content,
         createdAt: input.createdAt,
+        quotedMessageId: input.quotedMessageId,
       },
       select: {
         id: true,

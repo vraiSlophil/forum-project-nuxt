@@ -82,7 +82,7 @@ transitions de workflow complètes et pas seulement comme des insertions en base
 
 ## 9. Mettre en place l'administration fonctionnelle
 
-fait : []
+fait : [x]
 
 Il faut créer l'espace administrateur permettant de gérer les forums, les
 administrateurs et les opérations de modération.
@@ -138,24 +138,3 @@ développement si nécessaire pour que le rendu soit compréhensible et défenda
 Axe de réflexion intéressant: Il faut considérer la soutenance et le rapport
 comme une partie de la qualité du projet, pas comme une étape annexe de dernière
 minute.
-
----
-
-## 12. Traiter les bonus uniquement après le tronc principal
-
-fait : []
-
-Il faut réserver les fonctionnalités bonus à une phase finale, une fois le
-périmètre obligatoire sécurisé.
-
-Contexte: Le schéma actuel anticipe déjà plusieurs bonus possibles comme la
-citation, l'avatar et le verrouillage, ce qui peut faire gagner du temps plus
-tard. En revanche, tant que l'auth, la lecture SSR, l'écriture, l'administration
-et le temps réel obligatoire ne sont pas terminés, les bonus augmentent surtout
-le risque de dispersion. Le bonus le plus coûteux semble être l'état lu/non-lu,
-qui demandera probablement un modèle supplémentaire et une stratégie de suivi
-précise.
-
-Axe de réflexion intéressant: Il faut choisir les bonus non pas selon leur
-attrait visuel, mais selon leur rapport valeur démontrable sur coût réel
-d'implémentation.
