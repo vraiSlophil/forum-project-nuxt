@@ -111,10 +111,29 @@ async function waitForEnvelope(
   })
 }
 
+async function expectNoEnvelope(
+  socket: WebSocket,
+  predicate: (envelope: RealtimeEnvelope) => boolean,
+  timeoutMs = 600,
+) {
+  await expect(waitForEnvelope(socket, predicate, timeoutMs)).rejects.toThrow(
+    'Timed out waiting for realtime event',
+  )
+}
+
 function subscribe(socket: WebSocket, channels: string[]) {
   socket.send(
     JSON.stringify({
       type: 'subscribe',
+      channels,
+    }),
+  )
+}
+
+function unsubscribe(socket: WebSocket, channels: string[]) {
+  socket.send(
+    JSON.stringify({
+      type: 'unsubscribe',
       channels,
     }),
   )
@@ -343,6 +362,157 @@ describe('forum realtime websocket', () => {
           id: '00000000-0000-4000-8000-000000000030',
           content: 'Premier message modifie',
           isDeleted: false,
+        },
+      })
+    } finally {
+      socket.close()
+    }
+  })
+
+  it('does not broadcast anything to an invalid or unsupported channel subscription', async () => {
+    const socket = await openRealtimeSocket()
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+
+    subscribe(socket, ['topics:not-a-uuid:messages', 'forums:wrong-format', ''])
+
+    try {
+      const { response } = await requestJson('/api/forums/general/topics', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie,
+        },
+        body: JSON.stringify({
+          title: 'Sujet ignore',
+          content: 'Pas de diffusion attendue',
+        }),
+      })
+
+      expect(response.status).toBe(201)
+
+      await expectNoEnvelope(socket, (envelope) => envelope.event.type === 'topic.created')
+    } finally {
+      socket.close()
+    }
+  })
+
+  it('stops broadcasting to a socket after an unsubscribe command', async () => {
+    const socket = await openRealtimeSocket()
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const channel = 'forums:00000000-0000-4000-8000-000000000010:topics'
+
+    subscribe(socket, [channel])
+    unsubscribe(socket, [channel])
+
+    try {
+      const { response } = await requestJson('/api/forums/general/topics', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie,
+        },
+        body: JSON.stringify({
+          title: 'Sujet sans abonne',
+          content: 'Aucun evenement attendu',
+        }),
+      })
+
+      expect(response.status).toBe(201)
+
+      await expectNoEnvelope(socket, (envelope) => envelope.channel === channel)
+    } finally {
+      socket.close()
+    }
+  })
+
+  it('does not leak message events from another topic channel', async () => {
+    const socket = await openRealtimeSocket()
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+
+    subscribe(socket, ['topics:00000000-0000-4000-8000-000000000020:messages'])
+
+    try {
+      const createdTopic = await requestJson('/api/forums/general/topics', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie,
+        },
+        body: JSON.stringify({
+          title: 'Autre sujet',
+          content: 'Premier message autre sujet',
+        }),
+      })
+
+      expect(createdTopic.response.status).toBe(201)
+
+      const otherTopicSlug = (createdTopic.body as { topic: { slug: string } }).topic.slug
+
+      const replyResponse = await requestJson(
+        `/api/forums/general/topics/${otherTopicSlug}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            cookie,
+          },
+          body: JSON.stringify({
+            content: 'Reponse sur un autre sujet',
+          }),
+        },
+      )
+
+      expect(replyResponse.response.status).toBe(201)
+
+      await expectNoEnvelope(socket, (envelope) => envelope.event.type === 'message.created')
+    } finally {
+      socket.close()
+    }
+  })
+
+  it('broadcasts topic.deleted after an admin deletes a topic', async () => {
+    const socket = await openRealtimeSocket()
+    const userCookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const adminCookie = await createSessionCookie('00000000-0000-4000-8000-000000000001')
+
+    subscribe(socket, ['forums:00000000-0000-4000-8000-000000000010:topics'])
+
+    try {
+      const createdTopic = await requestJson('/api/forums/general/topics', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie: userCookie,
+        },
+        body: JSON.stringify({
+          title: 'Sujet a supprimer',
+          content: 'Suppression temps reel',
+        }),
+      })
+
+      expect(createdTopic.response.status).toBe(201)
+
+      const topicId = (createdTopic.body as { topic: { id: string } }).topic.id
+
+      const waitForDeleted = waitForEnvelope(
+        socket,
+        (envelope) => envelope.event.type === 'topic.deleted' && envelope.event.topicId === topicId,
+      )
+
+      const deleteResponse = await fetch(`${getForumServerUrl()}/api/admin/topics/${topicId}`, {
+        method: 'DELETE',
+        headers: {
+          cookie: adminCookie,
+        },
+      })
+
+      expect(deleteResponse.status).toBe(204)
+      expect(await waitForDeleted).toMatchObject({
+        channel: 'forums:00000000-0000-4000-8000-000000000010:topics',
+        event: {
+          type: 'topic.deleted',
+          topicId,
+          topic: null,
         },
       })
     } finally {

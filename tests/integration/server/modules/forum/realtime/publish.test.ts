@@ -107,4 +107,20 @@ describe('forum realtime publish', () => {
       }),
     )
   })
+
+  it('does not broadcast when the topic cannot be loaded anymore', async () => {
+    vi.mocked(forumRepository.findTopicRealtimeSummaryById).mockResolvedValue(null)
+
+    await publishTopicCreated('missing-topic')
+
+    expect(realtimeRegistry.broadcastToChannel).not.toHaveBeenCalled()
+  })
+
+  it('does not broadcast when the message cannot be loaded anymore', async () => {
+    vi.mocked(forumRepository.findMessageRealtimeRecordById).mockResolvedValue(null)
+
+    await publishMessageModerated('missing-message')
+
+    expect(realtimeRegistry.broadcastToChannel).not.toHaveBeenCalled()
+  })
 })
