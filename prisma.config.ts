@@ -1,6 +1,6 @@
 import 'dotenv/config'
 import { defineConfig, env } from 'prisma/config'
-import { buildPostgresConnectionString } from './server/utils/database-url'
+import { buildPostgresDatasourceUrl } from './server/utils/database-url'
 
 export default defineConfig({
   schema: 'prisma/schema.prisma',
@@ -8,7 +8,7 @@ export default defineConfig({
     path: 'prisma/migrations',
   },
   datasource: {
-    url: buildPostgresConnectionString({
+    url: buildPostgresDatasourceUrl({
       POSTGRES_DB: env('POSTGRES_DB'),
       POSTGRES_HOST: env('POSTGRES_HOST'),
       POSTGRES_PASSWORD: env('POSTGRES_PASSWORD'),

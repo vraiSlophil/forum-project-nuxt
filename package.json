@@ -9,7 +9,7 @@
     "test": "npm run test:integration && npm run test:e2e",
     "test:prepare": "nuxi prepare",
     "test:integration": "npm run test:prepare && vitest run tests/integration",
-    "test:e2e": "NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 POSTGRES_SCHEMA=forum_test prisma db push && NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 POSTGRES_SCHEMA=forum_test npm run test:prepare && NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 POSTGRES_SCHEMA=forum_test vitest run tests/e2e",
+    "test:e2e": "NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 POSTGRES_DB=forum_test POSTGRES_SCHEMA=forum_test prisma db push && NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 POSTGRES_DB=forum_test POSTGRES_SCHEMA=forum_test npm run test:prepare && NODE_ENV=test FORUM_ENABLE_TEST_ROUTES=1 POSTGRES_DB=forum_test POSTGRES_SCHEMA=forum_test vitest run tests/e2e",
     "typecheck": "nuxt typecheck",
     "preview": "nuxt preview",
     "lint": "eslint .",

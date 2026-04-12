@@ -1,16 +1,21 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient, UserRole } from '../../../server/generated/prisma/client'
 import { buildPostgresConnectionString } from '../../../server/utils/database-url'
+import { buildE2EEnvironment } from './env'
 
 type GlobalPrisma = typeof globalThis & {
   __forumTestPrisma?: PrismaClient
 }
 
 function createPrismaClient() {
+  const environment = buildE2EEnvironment()
+  const connectionString = buildPostgresConnectionString(environment)
+  const schema = environment.POSTGRES_SCHEMA
+
   return new PrismaClient({
-    adapter: new PrismaPg({
-      connectionString: buildPostgresConnectionString(),
-    }),
+    adapter: schema
+      ? new PrismaPg({ connectionString }, { schema })
+      : new PrismaPg({ connectionString }),
   })
 }
 

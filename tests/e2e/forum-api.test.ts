@@ -7,10 +7,6 @@ import {
 } from './utils/db'
 import { getForumServerUrl, startForumServer, stopForumServer } from './utils/server'
 
-process.env.NODE_ENV = 'test'
-process.env.FORUM_ENABLE_TEST_ROUTES = '1'
-process.env.POSTGRES_SCHEMA = 'forum_test'
-
 type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
 
 async function requestJson(path: string, init?: RequestInit) {
@@ -228,6 +224,83 @@ describe('forum server API', () => {
 
     expect(moderatedMessage?.deletedAt).not.toBeNull()
     expect(moderatedMessage?.content).toBe('Premier message')
+  })
+
+  it('restores a moderated message through PATCH /api/messages/:id', async () => {
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000001')
+
+    await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
+      },
+      body: JSON.stringify({
+        action: 'moderate-delete',
+      }),
+    })
+
+    const { response } = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
+      },
+      body: JSON.stringify({
+        action: 'moderate-restore',
+      }),
+    })
+
+    expect(response.status).toBe(200)
+
+    const restoredMessage = await getTestPrisma().message.findUnique({
+      where: {
+        id: '00000000-0000-4000-8000-000000000030',
+      },
+    })
+
+    expect(restoredMessage?.deletedAt).toBeNull()
+    expect(restoredMessage?.deletedByUserId).toBeNull()
+  })
+
+  it('shows the original moderated message to admins and the placeholder to regular users', async () => {
+    const adminCookie = await createSessionCookie('00000000-0000-4000-8000-000000000001')
+
+    await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+      },
+      body: JSON.stringify({
+        action: 'moderate-delete',
+      }),
+    })
+
+    const { response: adminPageResponse, body: adminBody } = await requestText(
+      '/forums/general/topics/bienvenue',
+      {
+        headers: {
+          cookie: adminCookie,
+        },
+      },
+    )
+    const userCookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const { response: userPageResponse, body: userBody } = await requestText(
+      '/forums/general/topics/bienvenue',
+      {
+        headers: {
+          cookie: userCookie,
+        },
+      },
+    )
+
+    expect(adminPageResponse.status).toBe(200)
+    expect(adminBody).toContain('Premier message')
+    expect(adminBody).toContain('Modere')
+    expect(userPageResponse.status).toBe(200)
+    expect(userBody).toContain('Ce message a ete supprime par la moderation.')
+    expect(userBody).not.toContain('Premier message')
   })
 
   it('renders the quoted message inside the topic page after a quoted reply', async () => {

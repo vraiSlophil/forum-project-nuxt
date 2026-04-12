@@ -2,6 +2,7 @@ import { once } from 'node:events'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
+import { buildE2EEnvironment } from './env'
 
 const rootDir = fileURLToPath(new URL('../../../', import.meta.url))
 const nuxiEntrypoint = fileURLToPath(
@@ -32,11 +33,7 @@ export async function startForumServer() {
     [nuxiEntrypoint, 'dev', '--host', '127.0.0.1', '--port', String(serverPort)],
     {
       cwd: rootDir,
-      env: {
-        ...process.env,
-        NODE_ENV: 'test',
-        FORUM_ENABLE_TEST_ROUTES: '1',
-      },
+      env: buildE2EEnvironment(),
       stdio: ['ignore', 'pipe', 'pipe'],
     },
   )

@@ -16,7 +16,6 @@ export function buildPostgresConnectionString(
   const host = readRequired(source, 'POSTGRES_HOST')
   const port = readRequired(source, 'POSTGRES_PORT')
   const database = readRequired(source, 'POSTGRES_DB')
-  const schema = source.POSTGRES_SCHEMA
 
   const url = new URL('postgresql://localhost')
   url.username = user
@@ -24,6 +23,15 @@ export function buildPostgresConnectionString(
   url.hostname = host
   url.port = port
   url.pathname = `/${database}`
+
+  return url.toString()
+}
+
+export function buildPostgresDatasourceUrl(
+  source: Record<string, string | undefined> = process.env,
+) {
+  const url = new URL(buildPostgresConnectionString(source))
+  const schema = source.POSTGRES_SCHEMA
 
   if (schema) {
     url.searchParams.set('schema', schema)

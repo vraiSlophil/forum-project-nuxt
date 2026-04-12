@@ -8,9 +8,12 @@ type GlobalPrisma = typeof globalThis & {
 
 function createPrismaClient() {
   const connectionString = buildPostgresConnectionString()
+  const schema = process.env.POSTGRES_SCHEMA
 
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: schema
+      ? new PrismaPg({ connectionString }, { schema })
+      : new PrismaPg({ connectionString }),
   })
 }
 
