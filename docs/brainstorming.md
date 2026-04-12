@@ -258,6 +258,107 @@ Points vérifiés dans la doc officielle :
   `sendNoContent`
 - `nuxt-auth-utils` : `getUserSession`, `requireUserSession`, `hashPassword`
 
+## Modération des messages
+
+- la suppression utilisateur reste un `DELETE` dur
+- la modération devient un `PATCH` sur le message existant
+- un message modéré n'est pas supprimé physiquement
+- on conserve `deletedAt` et `deletedByUserId` pour tracer la modération
+- la restauration remet simplement ces deux champs à `null`
+
+### Choix retenu
+
+- un modérateur doit voir le contenu original d'un message modéré
+- un visiteur ou un membre normal doit voir le placeholder de modération
+- l'interface doit donc distinguer clairement le statut métier de l'affichage
+
+### Conséquence technique
+
+- le presenter serveur expose deux lectures différentes du même message
+- la vue publique reçoit le placeholder
+- la vue modérateur reçoit le vrai contenu avec une indication visuelle en plus
+- `permissions.canRestore` permet d'afficher l'action inverse sans rajouter une
+  route
+
+## Contrat HTTP
+
+- `PATCH /api/messages/:id` garde la mise à jour de contenu
+- le même `PATCH` accepte aussi `moderate-delete`
+- le même `PATCH` accepte aussi `moderate-restore`
+- pas de nouvelle route dédiée à la restauration
+
+### Pourquoi ce choix
+
+- on évite de multiplier les endpoints pour une même ressource
+- on garde une surface API cohérente pour les mutations de message
+- l'action métier reste lisible dans le body plutôt que dans le chemin
+- le serveur peut refuser une restauration si le message n'est pas modéré
+
+## SSR Et Session
+
+- la page du sujet doit récupérer la session au SSR
+- sinon la lecture initiale reste publique même pour un admin connecté
+
+### Problème rencontré
+
+- les `$fetch` internes ne reprenaient pas le cookie côté serveur
+- le rendu SSR envoyait donc le placeholder au lieu du contenu original
+- le client corrigeait ensuite parfois l'affichage, mais trop tard
+
+### Correction
+
+- transmettre `cookie` dans les fetch SSR des pages concernées
+- appliquer le même principe sur l'accueil et les pages de forum
+- cela garantit une première lecture cohérente avec la session réelle
+
+## UI Message
+
+- le placeholder de modération doit rester visible pour tous
+- pour un modérateur, le contenu original doit apparaître juste en dessous
+- ce second bloc doit être visuellement plus discret, en gris
+- le but est de rendre la suppression immédiatement évidente, sans masquer
+  l'historique
+
+### Pourquoi pas un simple tag
+
+- le placeholder permet d'expliciter l'état public réel du message
+- le contenu original visible en dessous sert uniquement à la modération
+
+## SpeedDial
+
+- le `SpeedDial` de PrimeVue a bien servi pour l'idée du menu radial
+- en pratique, son rendu demande de respecter son propre contexte de
+  positionnement
+- un `z-index` local ne suffit pas si la carte suivante reste au-dessus dans le
+  stacking context
+
+### Problème observé
+
+- le menu débordait bien de la carte
+- mais il restait derrière la carte suivante
+- cela montrait que le problème venait du stacking context, pas de l'overflow
+
+### Correction retenue
+
+- faire monter la carte active quand le menu est ouvert
+- conserver le composant réutilisable sans le coupler à un contexte métier
+  spécifique
+- n'émettre que l'état `show` / `hide` pour laisser le parent décider du
+  stacking
+
+### Réutilisabilité
+
+- le dial reste exploitable ailleurs sans logique de forum
+- le parent peut ignorer les events si le stacking n'est pas un problème
+- ici, la carte message exploite ces events pour passer au-dessus des voisines
+
+## Tests
+
+- des tests d'intégration couvrent le presenter et la commande de restauration
+- des tests e2e vérifient la lecture admin vs public
+- les tests confirment aussi la réversibilité du soft delete
+- le typecheck et les e2e ont servi à valider les changements SSR et UI
+
 L'objectif était d'éviter d'inventer des conventions de routing ou des helpers
 de session qui n'existent pas vraiment dans la stack retenue.
 
@@ -724,10 +825,28 @@ serveur du projet, avec PostgreSQL dans Docker.
 
 Point important d'isolement :
 
-- les e2e utilisent un schéma PostgreSQL dédié (`forum_test`)
-- la base de développement reste sur le schéma `public`
+- les e2e utilisent une base PostgreSQL dédiée (`forum_test`)
+- le schéma `forum_test` est explicité pour Prisma CLI et pour l'adapter runtime
+- la base de développement reste sur `forum` avec le schéma `public`
 - les resets de test ne peuvent donc plus effacer les données locales de
   développement
+
+### Leçon importante sur Prisma
+
+Le point de fuite trouvé pendant l'implémentation est subtil :
+
+- `prisma db push` peut viser un schéma dédié via l'URL datasource
+- le runtime Prisma avec `@prisma/adapter-pg` doit recevoir le `schema`
+  explicitement dans l'adapter
+
+Si on ne fait que la première partie, on peut créer la bonne base de test mais
+continuer à lire le schéma `public` au runtime.
+
+Le pattern retenu est donc :
+
+- URL Prisma CLI avec `schema=...`
+- adapter runtime avec option `schema`
+- base e2e séparée de la base de dev
 
 Ce qu'ils vérifient :
 
