@@ -122,7 +122,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-4">
         <div
-          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] text-sm font-bold uppercase text-[var(--p-primary-700)] dark:bg-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)] dark:text-[var(--p-primary-300)]"
+          class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] text-sm font-bold uppercase text-(--p-primary-700) dark:bg-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)] dark:text-(--p-primary-300)"
         >
           {{ props.message.author.username.slice(0, 1) }}
         </div>
@@ -221,7 +221,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
       <textarea
         v-model="editContentModel"
         rows="6"
-        class="w-full rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-[var(--p-primary-color)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] dark:border-white/10 dark:bg-zinc-950/70 dark:text-white dark:focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)]"
+        class="w-full rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-(--p-primary-color) focus:ring-4 focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] dark:border-white/10 dark:bg-zinc-950/70 dark:text-white dark:focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)]"
       />
 
       <div class="flex flex-wrap gap-3">
@@ -277,7 +277,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
 
     <p
       v-if="props.isQuotePrepared"
-      class="mt-4 text-xs font-medium uppercase tracking-[0.14em] text-[var(--p-primary-color)]"
+      class="mt-4 text-xs font-medium uppercase tracking-[0.14em] text-(--p-primary-color)"
     >
       Message sélectionné pour la citation
     </p>
