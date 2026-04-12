@@ -65,6 +65,19 @@ export interface TopicSummary {
   messageCount: number
 }
 
+export type ForumTopicRealtimeEventType =
+  | 'topic.created'
+  | 'topic.bumped'
+  | 'topic.updated'
+  | 'topic.deleted'
+
+export interface ForumTopicRealtimeEvent {
+  forumId: string
+  topicId: string
+  type: ForumTopicRealtimeEventType
+  topic: TopicSummary | null
+}
+
 export interface TopicDetail {
   id: string
   title: string
@@ -112,11 +125,20 @@ export type TopicMessageRealtimeEventType =
   | 'message.created'
   | 'message.updated'
   | 'message.deleted'
+  | 'message.moderated'
+  | 'message.restored'
 
 export interface TopicMessageRealtimeEvent {
   topicId: string
   type: TopicMessageRealtimeEventType
   message: TopicMessage
+}
+
+export type ForumRealtimeEvent = ForumTopicRealtimeEvent | TopicMessageRealtimeEvent
+
+export interface ForumRealtimeEnvelope {
+  channel: string
+  event: ForumRealtimeEvent
 }
 
 export interface ForumsResponse {

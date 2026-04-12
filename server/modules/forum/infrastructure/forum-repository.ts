@@ -584,6 +584,7 @@ export async function findTopicById(topicId: string) {
     },
     select: {
       id: true,
+      forumId: true,
     },
   })
 }
@@ -640,6 +641,86 @@ export async function restoreMessageRecord(messageId: string) {
     data: {
       deletedAt: null,
       deletedByUserId: null,
+    },
+  })
+}
+
+export async function findTopicRealtimeSummaryById(topicId: string) {
+  const prisma = usePrisma()
+
+  return prisma.topic.findUnique({
+    where: {
+      id: topicId,
+    },
+    select: {
+      id: true,
+      forumId: true,
+      title: true,
+      slug: true,
+      isLocked: true,
+      createdAt: true,
+      updatedAt: true,
+      lastMessageAt: true,
+      author: {
+        select: userSummarySelect,
+      },
+      _count: {
+        select: {
+          messages: true,
+        },
+      },
+      messages: {
+        take: 1,
+        orderBy: [
+          {
+            createdAt: 'desc',
+          },
+          {
+            id: 'desc',
+          },
+        ],
+        select: {
+          id: true,
+          createdAt: true,
+          author: {
+            select: userSummarySelect,
+          },
+        },
+      },
+    },
+  })
+}
+
+export async function findMessageRealtimeRecordById(messageId: string) {
+  const prisma = usePrisma()
+
+  return prisma.message.findUnique({
+    where: {
+      id: messageId,
+    },
+    select: {
+      id: true,
+      topicId: true,
+      authorId: true,
+      content: true,
+      createdAt: true,
+      updatedAt: true,
+      editedAt: true,
+      deletedAt: true,
+      author: {
+        select: userSummarySelect,
+      },
+      quotedMessage: {
+        select: {
+          id: true,
+          content: true,
+          createdAt: true,
+          deletedAt: true,
+          author: {
+            select: userSummarySelect,
+          },
+        },
+      },
     },
   })
 }

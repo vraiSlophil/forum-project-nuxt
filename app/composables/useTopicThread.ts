@@ -3,6 +3,8 @@ import type {
   MessageDeletionResponse,
   MessageMutationResponse,
   ModerateMessageInput,
+  PaginationInfo,
+  TopicDetail,
   TopicMessage,
   TopicMessageRealtimeEvent,
   TopicPageResponse,
@@ -10,10 +12,17 @@ import type {
   UpdateMessageInput,
 } from '#shared/types/forum'
 import { readApiErrorMessage } from '~/utils/api-error'
+import { buildPageHref } from '~/utils/forum-ui'
 
 type TopicViewerState = {
   isAdmin: Readonly<Ref<boolean>>
   isAuthenticated: Readonly<Ref<boolean>>
+}
+
+type RealtimeNotice = {
+  href: string
+  label: string
+  message: string
 }
 
 export interface PreparedTopicQuote {
@@ -45,8 +54,46 @@ function cloneMessage(message: TopicMessage): TopicMessage {
   }
 }
 
+function hydrateMessagePermissions(
+  message: TopicMessage,
+  viewerState: TopicViewerState,
+  viewerUserId: string | null,
+): TopicMessage {
+  const isAdmin = viewerState.isAdmin.value
+  const isAuthor = viewerState.isAuthenticated.value && viewerUserId === message.author.id
+
+  return {
+    ...message,
+    permissions: {
+      ...message.permissions,
+      canEdit: !message.isDeleted && (isAdmin || isAuthor),
+      canDeleteOwn: !message.isDeleted && isAuthor,
+      canModerate: isAdmin,
+      canRestore: isAdmin && message.isDeleted,
+    },
+  }
+}
+
 function cloneMessages(messages: TopicMessage[]) {
   return messages.map((message) => cloneMessage(message))
+}
+
+function cloneTopic(topic: TopicDetail): TopicDetail {
+  return {
+    ...topic,
+    author: {
+      ...topic.author,
+    },
+    permissions: {
+      ...topic.permissions,
+    },
+  }
+}
+
+function clonePagination(pagination: PaginationInfo): PaginationInfo {
+  return {
+    ...pagination,
+  }
 }
 
 function sortMessages(messages: TopicMessage[]) {
@@ -59,11 +106,41 @@ function sortMessages(messages: TopicMessage[]) {
   })
 }
 
+function withPaginationTotal(pagination: PaginationInfo, totalItems: number): PaginationInfo {
+  const totalPages = Math.max(1, Math.ceil(totalItems / pagination.pageSize))
+
+  return {
+    ...pagination,
+    totalItems,
+    totalPages,
+    hasPreviousPage: pagination.page > 1,
+    hasNextPage: pagination.page < totalPages,
+  }
+}
+
+function isTopicMessageRealtimeEvent(event: unknown): event is TopicMessageRealtimeEvent {
+  if (!event || typeof event !== 'object' || Array.isArray(event)) {
+    return false
+  }
+
+  const candidate = event as Record<string, unknown>
+
+  return (
+    typeof candidate.topicId === 'string' &&
+    typeof candidate.type === 'string' &&
+    candidate.type.startsWith('message.') &&
+    !!candidate.message &&
+    typeof candidate.message === 'object'
+  )
+}
+
 export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicViewerState) {
   const topicPath = `/forums/${topicPage.forum.slug}/topics/${topicPage.topic.slug}`
   const forumPath = `/forums/${topicPage.forum.slug}`
   const topicApiPath = `/api/forums/${topicPage.forum.slug}/topics/${topicPage.topic.slug}`
 
+  const topic = ref(cloneTopic(topicPage.topic))
+  const pagination = ref(clonePagination(topicPage.pagination))
   const messages = useState<TopicMessage[]>(
     `topic-messages:${topicPage.topic.id}:${topicPage.pagination.page}`,
     () => cloneMessages(topicPage.messages),
@@ -82,22 +159,71 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     content: '',
   })
 
-  const isReplyOpen = ref(topicPage.topic.permissions.canReply && topicPage.messages.length < 2)
+  const isReplyOpen = ref(topic.value.permissions.canReply && topicPage.messages.length < 2)
   const replyPending = ref(false)
   const replyError = ref('')
   const editingMessageId = ref<string | null>(null)
   const editPending = ref(false)
   const editError = ref('')
+  const realtimeNotice = ref<RealtimeNotice | null>(null)
+  const refreshPending = ref(false)
 
-  const canReply = computed(() => viewerState.isAuthenticated.value && !topicPage.topic.isLocked)
+  const canReply = computed(() => viewerState.isAuthenticated.value && !topic.value.isLocked)
   const canModerate = computed(
-    () => topicPage.topic.permissions.canModerate || viewerState.isAdmin.value,
+    () => topic.value.permissions.canModerate || viewerState.isAdmin.value,
   )
   const canDeleteTopic = computed(
-    () => topicPage.topic.permissions.canDelete || viewerState.isAdmin.value,
+    () => topic.value.permissions.canDelete || viewerState.isAdmin.value,
   )
-  const realtimeChannel = computed(() => `topics:${topicPage.topic.id}:messages`)
+  const realtimeChannel = computed(() => `topics:${topic.value.id}:messages`)
   const selectedQuoteMessageId = computed(() => preparedQuote.value?.messageId ?? null)
+  const isLastPage = computed(() => pagination.value.page >= pagination.value.totalPages)
+
+  function showRealtimeNotice(
+    message: string,
+    href = buildPageHref(topicPath, pagination.value.page),
+    label = 'Recharger cette page',
+  ) {
+    realtimeNotice.value = {
+      href,
+      label,
+      message,
+    }
+  }
+
+  function setTopicPageState(nextPage: TopicPageResponse) {
+    topic.value = cloneTopic(nextPage.topic)
+    pagination.value = clonePagination(nextPage.pagination)
+    messages.value = cloneMessages(nextPage.messages)
+  }
+
+  async function refreshCurrentPage() {
+    if (refreshPending.value) {
+      return
+    }
+
+    refreshPending.value = true
+
+    try {
+      const nextPage = await $fetch<TopicPageResponse>(topicApiPath, {
+        query: pagination.value.page > 1 ? { page: pagination.value.page } : undefined,
+      })
+
+      setTopicPageState(nextPage)
+    } finally {
+      refreshPending.value = false
+    }
+  }
+
+  function updateMessageTotals(totalItems: number) {
+    const normalizedTotal = Math.max(0, totalItems)
+
+    topic.value = {
+      ...topic.value,
+      messageCount: normalizedTotal,
+    }
+    pagination.value = withPaginationTotal(pagination.value, normalizedTotal)
+  }
 
   function setEditContent(value: string) {
     editForm.content = value
@@ -131,7 +257,11 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
   }
 
   function mergeRealtimeMessage(message: TopicMessage) {
-    const nextMessage = cloneMessage(message)
+    const nextMessage = hydrateMessagePermissions(
+      cloneMessage(message),
+      viewerState,
+      topicPage.viewer.userId,
+    )
     const messageIndex = messages.value.findIndex((candidate) => candidate.id === nextMessage.id)
 
     if (messageIndex === -1) {
@@ -140,14 +270,6 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     }
 
     messages.value.splice(messageIndex, 1, nextMessage)
-  }
-
-  function applyRealtimeEvent(event: TopicMessageRealtimeEvent) {
-    if (event.topicId !== topicPage.topic.id) {
-      return
-    }
-
-    mergeRealtimeMessage(event.message)
   }
 
   function unlinkQuotedMessageLocally(messageId: string) {
@@ -223,6 +345,66 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     })
   }
 
+  async function applyRealtimeEvent(event: TopicMessageRealtimeEvent) {
+    if (event.topicId !== topic.value.id) {
+      return
+    }
+
+    if (event.type === 'message.created') {
+      updateMessageTotals(topic.value.messageCount + 1)
+
+      if (!isLastPage.value) {
+        showRealtimeNotice(
+          'Un nouveau message est disponible dans ce sujet.',
+          buildPageHref(topicPath, pagination.value.totalPages),
+          'Voir la derniere page',
+        )
+        return
+      }
+
+      mergeRealtimeMessage(event.message)
+      return
+    }
+
+    if (event.type === 'message.deleted') {
+      updateMessageTotals(topic.value.messageCount - 1)
+
+      if (pagination.value.page > pagination.value.totalPages) {
+        showRealtimeNotice(
+          'Le fil a change. La derniere page du sujet a ete deplacee.',
+          buildPageHref(topicPath, pagination.value.totalPages),
+          'Voir la nouvelle derniere page',
+        )
+        return
+      }
+
+      if (!isLastPage.value) {
+        await refreshCurrentPage()
+        showRealtimeNotice('Le fil a change sur cette page.')
+        return
+      }
+
+      removeMessageLocally(event.message.id)
+      return
+    }
+
+    const messageIsLoaded = messages.value.some((message) => message.id === event.message.id)
+
+    if (event.type === 'message.moderated' || event.type === 'message.restored') {
+      if (viewerState.isAdmin.value) {
+        await refreshCurrentPage()
+        return
+      }
+    }
+
+    if (!messageIsLoaded) {
+      showRealtimeNotice('Des mises a jour sont disponibles dans ce sujet.')
+      return
+    }
+
+    mergeRealtimeMessage(event.message)
+  }
+
   async function submitReply() {
     replyPending.value = true
     replyError.value = ''
@@ -266,12 +448,12 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
   }
 
   async function deleteTopic() {
-    if (!window.confirm(`Supprimer le sujet "${topicPage.topic.title}" et tous ses messages ?`)) {
+    if (!window.confirm(`Supprimer le sujet "${topic.value.title}" et tous ses messages ?`)) {
       return
     }
 
     try {
-      await $fetch(`/api/admin/topics/${topicPage.topic.id}`, {
+      await $fetch(`/api/admin/topics/${topic.value.id}`, {
         method: 'DELETE',
       })
 
@@ -336,6 +518,29 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     }
   }
 
+  if (import.meta.client) {
+    const realtimeClient = useForumRealtimeClient()
+    let unsubscribe: (() => void) | undefined
+
+    onMounted(() => {
+      if (!realtimeClient) {
+        return
+      }
+
+      unsubscribe = realtimeClient.subscribe(realtimeChannel.value, async (event) => {
+        if (!isTopicMessageRealtimeEvent(event)) {
+          return
+        }
+
+        await applyRealtimeEvent(event)
+      })
+    })
+
+    onBeforeUnmount(() => {
+      unsubscribe?.()
+    })
+  }
+
   return {
     applyRealtimeEvent,
     canDeleteTopic,
@@ -353,18 +558,22 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     isReplyOpen,
     messages,
     moderateMessage,
+    pagination,
     prepareQuote,
     preparedQuote,
     realtimeChannel,
+    realtimeNotice,
+    refreshCurrentPage,
     replyError,
     replyForm,
     replyPending,
+    restoreModeratedMessage,
     selectedQuoteMessageId,
     setEditContent,
     startEditing,
     submitEdit,
     submitReply,
+    topic,
     topicPath,
-    restoreModeratedMessage,
   }
 }

@@ -7,6 +7,11 @@ import {
   validateMessageIdParams,
 } from '#server/modules/forum/http/validation'
 import { requireForumActor } from '#server/modules/forum/infrastructure/session'
+import {
+  publishMessageModerated,
+  publishMessageRestored,
+  publishMessageUpdated,
+} from '#server/modules/forum/realtime/publish'
 import { getValidatedRouterParams, readValidatedBody } from 'h3'
 
 export default defineForumHttpHandler(async (event) => {
@@ -16,6 +21,7 @@ export default defineForumHttpHandler(async (event) => {
 
   if ('action' in input && input.action === 'moderate-delete') {
     await moderateMessage(actor, messageId)
+    await publishMessageModerated(messageId)
     return {
       moderated: true,
     }
@@ -23,15 +29,20 @@ export default defineForumHttpHandler(async (event) => {
 
   if ('action' in input && input.action === 'moderate-restore') {
     await restoreMessage(actor, messageId)
+    await publishMessageRestored(messageId)
     return {
       restored: true,
     }
   }
 
   if ('content' in input) {
-    return updateMessage(actor, messageId, {
+    const result = await updateMessage(actor, messageId, {
       content: input.content,
     })
+
+    await publishMessageUpdated(messageId)
+
+    return result
   }
 
   return {

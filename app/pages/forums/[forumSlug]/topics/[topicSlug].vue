@@ -61,7 +61,7 @@ useSeoMeta({
           </NuxtLink>
           <span>/</span>
           <span class="font-medium text-zinc-700 dark:text-zinc-200">
-            {{ topicPage.topic.title }}
+            {{ threadState.topic.title }}
           </span>
         </nav>
 
@@ -74,7 +74,7 @@ useSeoMeta({
               <div class="flex flex-wrap items-center gap-3">
                 <LandingPill variant="glass">Sujet</LandingPill>
                 <LandingTag
-                  v-if="topicPage.topic.isLocked"
+                  v-if="threadState.topic.isLocked"
                   tone="secondary"
                   size="sm"
                   icon="lock"
@@ -88,18 +88,18 @@ useSeoMeta({
                 size="hero"
                 class="mt-6"
               >
-                {{ topicPage.topic.title }}
+                {{ threadState.topic.title }}
               </LandingHeading>
 
               <p class="mt-5 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-                Sujet ouvert par {{ topicPage.topic.author.username }} le
-                {{ formatForumDateTime(topicPage.topic.createdAt) }}.
+                Sujet ouvert par {{ threadState.topic.author.username }} le
+                {{ formatForumDateTime(threadState.topic.createdAt) }}.
               </p>
             </div>
 
             <div class="flex flex-wrap gap-3">
               <LandingPill variant="accent">
-                {{ formatCount(topicPage.topic.messageCount, 'message') }}
+                {{ formatCount(threadState.topic.messageCount, 'message') }}
               </LandingPill>
               <LandingPill
                 v-if="threadState.canReply"
@@ -108,6 +108,26 @@ useSeoMeta({
                 Reponses ouvertes
               </LandingPill>
             </div>
+          </div>
+        </LandingWhiteCard>
+
+        <LandingWhiteCard
+          v-if="threadState.realtimeNotice"
+          class="border-[color-mix(in_srgb,var(--p-primary-color)_28%,white)] bg-[color-mix(in_srgb,var(--p-primary-color)_10%,white)] dark:border-[color-mix(in_srgb,var(--p-primary-color)_22%,transparent)] dark:bg-[color-mix(in_srgb,var(--p-primary-color)_10%,transparent)]"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm leading-7 text-zinc-700 dark:text-zinc-200">
+              {{ threadState.realtimeNotice.message }}
+            </p>
+            <NuxtLink :to="threadState.realtimeNotice.href">
+              <LandingButton
+                variant="outlined"
+                size="sm"
+                icon="refresh"
+              >
+                {{ threadState.realtimeNotice.label }}
+              </LandingButton>
+            </NuxtLink>
           </div>
         </LandingWhiteCard>
 
@@ -143,7 +163,7 @@ useSeoMeta({
                 chronologique croissant.
               </p>
               <p class="mt-2 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-                Le flux temps reel sera branche plus tard sur le canal
+                Le flux temps reel ecoute le canal
                 <code>{{ threadState.realtimeChannel }}</code
                 >.
               </p>
@@ -296,17 +316,17 @@ useSeoMeta({
 
         <ForumPagination
           :base-path="threadState.topicPath"
-          :pagination="topicPage.pagination"
+          :pagination="threadState.pagination"
         />
 
         <LandingWhiteCard
-          v-if="topicPage.pagination.hasNextPage"
+          v-if="threadState.pagination.hasNextPage"
           class="text-sm text-zinc-600 dark:text-zinc-300"
         >
           <p>
             Le dernier message du sujet se trouve plus bas dans la pagination.
             <NuxtLink
-              :to="buildPageHref(threadState.topicPath, topicPage.pagination.totalPages)"
+              :to="buildPageHref(threadState.topicPath, threadState.pagination.totalPages)"
               class="font-semibold text-zinc-950 underline dark:text-white"
             >
               Aller a la derniere page

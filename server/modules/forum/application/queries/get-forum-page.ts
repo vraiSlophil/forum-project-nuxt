@@ -1,6 +1,6 @@
 import { requirePageInRange } from '#server/modules/forum/application/shared/guards'
 import {
-  presentUserSummary,
+  presentTopicSummary,
   presentViewer,
 } from '#server/modules/forum/application/shared/presenters'
 import type { SessionForumUser } from '#server/modules/forum/domain/actors'
@@ -40,23 +40,7 @@ export async function getForumPage(
         canCreateTopic: viewer !== null,
       },
     },
-    topics: topics.map((topic) => ({
-      id: topic.id,
-      title: topic.title,
-      slug: topic.slug,
-      isLocked: topic.isLocked,
-      createdAt: topic.createdAt.toISOString(),
-      updatedAt: topic.updatedAt.toISOString(),
-      lastMessageAt: topic.lastMessageAt.toISOString(),
-      author: presentUserSummary(topic.author),
-      lastMessage: topic.messages[0]
-        ? {
-            createdAt: topic.messages[0].createdAt.toISOString(),
-            author: presentUserSummary(topic.messages[0].author),
-          }
-        : null,
-      messageCount: topic._count.messages,
-    })),
+    topics: topics.map((topic) => presentTopicSummary(topic)),
     pagination,
   }
 }

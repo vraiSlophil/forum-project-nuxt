@@ -10,6 +10,7 @@ import type {
   ForumUserSummary,
   ForumViewer,
   QuotedMessageSummary,
+  TopicSummary,
   TopicMessage,
 } from '#shared/types/forum'
 
@@ -75,6 +76,51 @@ export function presentForumAdminSummary(forum: {
     description: forum.description,
     createdAt: forum.createdAt.toISOString(),
     updatedAt: forum.updatedAt.toISOString(),
+  }
+}
+
+export function presentTopicSummary(topic: {
+  id: string
+  title: string
+  slug: string
+  isLocked: boolean
+  createdAt: Date
+  updatedAt: Date
+  lastMessageAt: Date
+  author: {
+    id: string
+    username: string
+    avatarUrl: string | null
+  }
+  _count: {
+    messages: number
+  }
+  messages: Array<{
+    id: string
+    createdAt: Date
+    author: {
+      id: string
+      username: string
+      avatarUrl: string | null
+    }
+  }>
+}): TopicSummary {
+  return {
+    id: topic.id,
+    title: topic.title,
+    slug: topic.slug,
+    isLocked: topic.isLocked,
+    createdAt: topic.createdAt.toISOString(),
+    updatedAt: topic.updatedAt.toISOString(),
+    lastMessageAt: topic.lastMessageAt.toISOString(),
+    author: presentUserSummary(topic.author),
+    lastMessage: topic.messages[0]
+      ? {
+          createdAt: topic.messages[0].createdAt.toISOString(),
+          author: presentUserSummary(topic.messages[0].author),
+        }
+      : null,
+    messageCount: topic._count.messages,
   }
 }
 

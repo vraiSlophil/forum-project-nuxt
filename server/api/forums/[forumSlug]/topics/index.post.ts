@@ -5,6 +5,7 @@ import {
   validateForumSlugParams,
 } from '#server/modules/forum/http/validation'
 import { requireForumActor } from '#server/modules/forum/infrastructure/session'
+import { publishTopicCreated } from '#server/modules/forum/realtime/publish'
 import { getValidatedRouterParams, readValidatedBody, setResponseStatus } from 'h3'
 
 export default defineForumHttpHandler(async (event) => {
@@ -12,6 +13,8 @@ export default defineForumHttpHandler(async (event) => {
   const input = await readValidatedBody(event, validateCreateTopicInput)
   const actor = await requireForumActor(event)
   const result = await createTopic(actor, forumSlug, input)
+
+  await publishTopicCreated(result.topic.id)
 
   setResponseStatus(event, 201)
 

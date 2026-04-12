@@ -16,4 +16,9 @@ export async function deleteTopic(actor: ForumActor, topicId: string) {
   }
 
   await deleteTopicRecord(topic.id)
+
+  return {
+    forumId: topic.forumId,
+    topicId: topic.id,
+  }
 }

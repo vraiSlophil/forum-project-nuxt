@@ -69,7 +69,7 @@ useSeoMeta({
 
             <div class="flex flex-wrap gap-3">
               <LandingPill variant="accent">
-                {{ formatCount(forumPage.pagination.totalItems, 'sujet') }}
+                {{ formatCount(forumState.pagination.totalItems, 'sujet') }}
               </LandingPill>
               <div
                 v-if="viewerState.isAuthenticated"
@@ -92,6 +92,26 @@ useSeoMeta({
                 </LandingButton>
               </div>
             </div>
+          </div>
+        </LandingWhiteCard>
+
+        <LandingWhiteCard
+          v-if="forumState.realtimeNotice"
+          class="border-[color-mix(in_srgb,var(--p-primary-color)_28%,white)] bg-[color-mix(in_srgb,var(--p-primary-color)_10%,white)] dark:border-[color-mix(in_srgb,var(--p-primary-color)_22%,transparent)] dark:bg-[color-mix(in_srgb,var(--p-primary-color)_10%,transparent)]"
+        >
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm leading-7 text-zinc-700 dark:text-zinc-200">
+              {{ forumState.realtimeNotice.message }}
+            </p>
+            <NuxtLink :to="forumState.realtimeNotice.href">
+              <LandingButton
+                variant="outlined"
+                size="sm"
+                icon="refresh"
+              >
+                {{ forumState.realtimeNotice.label }}
+              </LandingButton>
+            </NuxtLink>
           </div>
         </LandingWhiteCard>
 
@@ -193,7 +213,7 @@ useSeoMeta({
 
         <div class="space-y-4">
           <NuxtLink
-            v-for="topic in forumPage.topics"
+            v-for="topic in forumState.topics"
             :key="topic.id"
             :to="`${forumState.forumPath}/topics/${topic.slug}`"
             class="block transition hover:-translate-y-1"
@@ -252,7 +272,7 @@ useSeoMeta({
             </LandingWhiteCard>
           </NuxtLink>
 
-          <LandingWhiteCard v-if="forumPage.topics.length === 0">
+          <LandingWhiteCard v-if="forumState.topics.length === 0">
             <LandingEyebrow>Aucun sujet</LandingEyebrow>
             <LandingHeading
               as="h2"
@@ -273,7 +293,7 @@ useSeoMeta({
 
         <ForumPagination
           :base-path="forumState.forumPath"
-          :pagination="forumPage.pagination"
+          :pagination="forumState.pagination"
         />
       </div>
     </main>
