@@ -15,7 +15,9 @@ const route = useRoute()
 const forumSlug = String(route.params.forumSlug)
 const topicSlug = String(route.params.topicSlug)
 const pageQuery = readPageQueryParam(route.query.page)
+const authHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 const topicPage = await $fetch<TopicPageResponse>(`/api/forums/${forumSlug}/topics/${topicSlug}`, {
+  headers: authHeaders,
   query: pageQuery ? { page: pageQuery } : undefined,
 })
 const viewerStateSource = await useForumViewer(() => topicPage.viewer)
@@ -124,6 +126,7 @@ useSeoMeta({
             @cancel-edit="threadState.cancelEditing"
             @delete-own="threadState.deleteOwnMessage"
             @moderate-delete="threadState.moderateMessage"
+            @moderate-restore="threadState.restoreModeratedMessage"
             @select-quote="handleQuote"
             @save-edit="threadState.submitEdit"
             @start-edit="threadState.startEditing"

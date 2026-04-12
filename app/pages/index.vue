@@ -8,7 +8,10 @@ useSeoMeta({
     'Liste des forums, lecture publique et navigation SSR dans la hierarchie Forums, Sujets et Messages.',
 })
 
-const forumsResponse = await $fetch<ForumsResponse>('/api/forums')
+const authHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
+const forumsResponse = await $fetch<ForumsResponse>('/api/forums', {
+  headers: authHeaders,
+})
 const viewerStateSource = await useForumViewer(() => forumsResponse.viewer)
 const viewerState = reactive(viewerStateSource)
 

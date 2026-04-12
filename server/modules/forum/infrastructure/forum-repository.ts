@@ -629,3 +629,17 @@ export async function markMessageDeleted(input: {
     },
   })
 }
+
+export async function restoreMessageRecord(messageId: string) {
+  const prisma = usePrisma()
+
+  await prisma.message.update({
+    where: {
+      id: messageId,
+    },
+    data: {
+      deletedAt: null,
+      deletedByUserId: null,
+    },
+  })
+}

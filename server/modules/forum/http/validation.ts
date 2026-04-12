@@ -269,9 +269,9 @@ export function validateUpdateMessageInput(value: unknown): UpdateMessageInput {
 export function validatePatchMessageInput(value: unknown): PatchMessageInput {
   const body = readObject(value, 'request body')
 
-  if (body.action === 'moderate-delete') {
+  if (body.action === 'moderate-delete' || body.action === 'moderate-restore') {
     return {
-      action: 'moderate-delete',
+      action: body.action,
     }
   }
 

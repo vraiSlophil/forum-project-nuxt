@@ -2,6 +2,7 @@ import type {
   CreateMessageInput,
   MessageDeletionResponse,
   MessageMutationResponse,
+  ModerateMessageInput,
   TopicMessage,
   TopicMessageRealtimeEvent,
   TopicPageResponse,
@@ -183,14 +184,14 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
 
       return {
         ...message,
-        content: 'Ce message a ete supprime par la moderation.',
         deletedAt,
         isDeleted: true,
         permissions: {
           ...message.permissions,
           canDeleteOwn: false,
           canEdit: false,
-          canModerate: false,
+          canModerate: true,
+          canRestore: true,
         },
       }
     })
@@ -198,6 +199,28 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     if (preparedQuote.value?.messageId === messageId) {
       clearQuote()
     }
+  }
+
+  function restoreMessageLocally(messageId: string) {
+    messages.value = messages.value.map((message) => {
+      if (message.id !== messageId) {
+        return message
+      }
+
+      return {
+        ...message,
+        deletedAt: null,
+        isDeleted: false,
+        permissions: {
+          ...message.permissions,
+          canDeleteOwn:
+            viewerState.isAuthenticated.value && message.author.id === topicPage.viewer.userId,
+          canEdit: true,
+          canModerate: canModerate.value,
+          canRestore: false,
+        },
+      }
+    })
   }
 
   async function submitReply() {
@@ -294,6 +317,25 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     }
   }
 
+  async function restoreModeratedMessage(messageId: string) {
+    if (!window.confirm('Restaurer ce message modere ?')) {
+      return
+    }
+
+    try {
+      await $fetch(`/api/messages/${messageId}`, {
+        method: 'PATCH',
+        body: {
+          action: 'moderate-restore',
+        } satisfies ModerateMessageInput,
+      })
+
+      restoreMessageLocally(messageId)
+    } catch (error) {
+      editError.value = readApiErrorMessage(error, 'Restauration du message impossible')
+    }
+  }
+
   return {
     applyRealtimeEvent,
     canDeleteTopic,
@@ -323,5 +365,6 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     submitEdit,
     submitReply,
     topicPath,
+    restoreModeratedMessage,
   }
 }

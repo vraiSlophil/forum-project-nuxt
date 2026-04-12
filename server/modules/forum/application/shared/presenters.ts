@@ -148,7 +148,8 @@ export function presentTopicMessage(
     permissions: {
       canEdit: canEditMessage(viewer, message.authorId, isDeleted),
       canDeleteOwn: canDeleteOwnMessage(viewer, message.authorId, isDeleted),
-      canModerate: canModerate(viewer) && !isDeleted,
+      canModerate: canModerate(viewer),
+      canRestore: canModerate(viewer) && isDeleted,
     },
   }
 }

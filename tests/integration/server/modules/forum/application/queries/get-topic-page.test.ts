@@ -91,12 +91,14 @@ describe('getTopicPage', () => {
       canEdit: true,
       canDeleteOwn: true,
       canModerate: false,
+      canRestore: false,
     })
     expect(result.messages[1].content).toBe('Ce message a ete supprime par la moderation.')
     expect(result.messages[1].permissions).toEqual({
       canEdit: false,
       canDeleteOwn: false,
       canModerate: false,
+      canRestore: false,
     })
     expect(result.pagination).toEqual({
       page: 1,
@@ -124,5 +126,64 @@ describe('getTopicPage', () => {
     })
 
     expect(forumRepository.listMessagesInTopicPage).not.toHaveBeenCalled()
+  })
+
+  it('shows moderated message content and restore permission to an admin', async () => {
+    vi.mocked(forumRepository.findForumBySlug).mockResolvedValue({
+      id: 'forum-1',
+      name: 'General',
+      slug: 'general',
+      description: 'Discussions generales',
+      createdAt: new Date('2026-03-01T00:00:00.000Z'),
+      updatedAt: new Date('2026-03-01T00:00:00.000Z'),
+    })
+    vi.mocked(forumRepository.findTopicForRead).mockResolvedValue({
+      id: 'topic-1',
+      title: 'Bienvenue',
+      slug: 'bienvenue',
+      isLocked: false,
+      createdAt: new Date('2026-03-01T10:00:00.000Z'),
+      updatedAt: new Date('2026-03-02T10:00:00.000Z'),
+      lastMessageAt: new Date('2026-03-03T10:00:00.000Z'),
+      author: {
+        id: 'user-1',
+        username: 'alice',
+        avatarUrl: null,
+      },
+      _count: {
+        messages: 1,
+      },
+    })
+    vi.mocked(forumRepository.listMessagesInTopicPage).mockResolvedValue([
+      {
+        id: 'message-2',
+        authorId: 'user-2',
+        content: 'Contenu original modere',
+        createdAt: new Date('2026-03-02T10:00:00.000Z'),
+        updatedAt: new Date('2026-03-02T10:00:00.000Z'),
+        editedAt: null,
+        deletedAt: new Date('2026-03-03T10:00:00.000Z'),
+        author: {
+          id: 'user-2',
+          username: 'bob',
+          avatarUrl: null,
+        },
+        quotedMessage: null,
+      },
+    ])
+
+    const result = await getTopicPage('general', 'bienvenue', 1, {
+      id: 'admin-1',
+      username: 'admin',
+      role: 'ADMIN',
+    })
+
+    expect(result.messages[0].content).toBe('Contenu original modere')
+    expect(result.messages[0].permissions).toEqual({
+      canEdit: false,
+      canDeleteOwn: false,
+      canModerate: true,
+      canRestore: true,
+    })
   })
 })

@@ -11,17 +11,17 @@ export interface ForumMessageAction {
   tone?: ForumMessageActionTone
 }
 
-const props = withDefaults(
-  defineProps<{
-    actions: ForumMessageAction[]
-    triggerIcon: string
-    triggerLabel: string
-    variant?: 'user' | 'moderation'
-  }>(),
-  {
-    variant: 'user',
-  },
-)
+const props = defineProps<{
+  actions: ForumMessageAction[]
+  triggerIcon: string
+  triggerLabel: string
+  variant?: 'default' | 'moderation'
+}>()
+
+const emit = defineEmits<{
+  show: []
+  hide: []
+}>()
 
 const menuModel = computed<MenuItem[]>(() =>
   props.actions.map((action) => ({
@@ -33,10 +33,6 @@ const menuModel = computed<MenuItem[]>(() =>
     command: () => action.onSelect(),
   })),
 )
-
-const dialDirection = computed(() => {
-  return props.variant === 'moderation' ? 'down-left' : 'down-right'
-})
 
 const dialRadius = computed(() => (props.actions.length <= 1 ? 48 : 56))
 
@@ -61,8 +57,7 @@ const actionButtonProps = computed(() => ({
   <SpeedDial
     v-if="props.actions.length > 0"
     :model="menuModel"
-    type="quarter-circle"
-    :direction="dialDirection"
+    direction="down"
     :radius="dialRadius"
     :hide-on-click-outside="true"
     :aria-label="props.triggerLabel"
@@ -70,7 +65,14 @@ const actionButtonProps = computed(() => ({
     :action-button-props="actionButtonProps"
     show-icon="custom"
     hide-icon="custom"
-    class="!relative !gap-0"
+    class="!relative z-10"
+    :pt="{
+      list: {
+        class: 'absolute top-[calc(100%+0.5rem)]',
+      },
+    }"
+    @show="emit('show')"
+    @hide="emit('hide')"
   >
     <template #icon="{ visible }">
       <LandingIcon

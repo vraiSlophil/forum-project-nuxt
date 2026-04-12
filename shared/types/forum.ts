@@ -104,6 +104,7 @@ export interface TopicMessage {
     canEdit: boolean
     canDeleteOwn: boolean
     canModerate: boolean
+    canRestore: boolean
   }
 }
 
@@ -160,7 +161,7 @@ export interface UpdateMessageInput {
 }
 
 export interface ModerateMessageInput {
-  action: 'moderate-delete'
+  action: 'moderate-delete' | 'moderate-restore'
 }
 
 export type PatchMessageInput = UpdateMessageInput | ModerateMessageInput

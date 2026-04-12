@@ -17,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'delete-own': [messageId: string]
   'moderate-delete': [messageId: string]
+  'moderate-restore': [messageId: string]
   'select-quote': [message: TopicMessage]
   'save-edit': [messageId: string]
   'start-edit': [message: TopicMessage]
@@ -32,6 +33,12 @@ const editContentModel = computed({
 function handleQuoteClick() {
   emit('select-quote', props.message)
 }
+
+const deletedMessagePlaceholder = 'Ce message a ete supprime par la moderation.'
+const canSeeModerationPreview = computed(
+  () => props.message.isDeleted && props.message.permissions.canRestore,
+)
+const isActionsOpen = ref(false)
 
 const userActions = computed<ForumMessageAction[]>(() => {
   const actions: ForumMessageAction[] = []
@@ -84,13 +91,23 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
     })
   }
 
-  actions.push({
-    key: 'moderate-delete',
-    label: 'Supprimer par moderation',
-    icon: 'gavel',
-    tone: 'moderation',
-    onSelect: () => emit('moderate-delete', props.message.id),
-  })
+  if (props.message.permissions.canRestore) {
+    actions.push({
+      key: 'moderate-restore',
+      label: 'Restaurer le message',
+      icon: 'settings_backup_restore',
+      tone: 'moderation',
+      onSelect: () => emit('moderate-restore', props.message.id),
+    })
+  } else {
+    actions.push({
+      key: 'moderate-delete',
+      label: 'Supprimer par moderation',
+      icon: 'gavel',
+      tone: 'moderation',
+      onSelect: () => emit('moderate-delete', props.message.id),
+    })
+  }
 
   return actions
 })
@@ -99,7 +116,8 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
 <template>
   <LandingWhiteCard
     :id="`message-${props.message.id}`"
-    class="overflow-visible"
+    class="overflow-visible relative"
+    :class="isActionsOpen ? 'z-30' : 'z-0'"
   >
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="flex items-start gap-4">
@@ -154,6 +172,8 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
           trigger-label="Ouvrir les actions de moderation"
           variant="moderation"
           :actions="moderationActions"
+          @show="isActionsOpen = true"
+          @hide="isActionsOpen = false"
         />
 
         <ForumMessageActionDial
@@ -161,6 +181,8 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
           trigger-icon="more_horiz"
           trigger-label="Ouvrir les actions du message"
           :actions="userActions"
+          @show="isActionsOpen = true"
+          @hide="isActionsOpen = false"
         />
       </div>
     </div>
@@ -224,9 +246,33 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
 
     <div
       v-else
-      class="mt-5 whitespace-pre-wrap text-base leading-8 text-zinc-700 dark:text-zinc-200"
+      class="mt-5 space-y-3"
     >
-      {{ props.message.content }}
+      <p
+        v-if="props.message.isDeleted"
+        class="rounded-[1.35rem] border border-amber-200/70 bg-amber-50/90 px-4 py-3 text-sm font-medium leading-7 text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200"
+      >
+        {{ deletedMessagePlaceholder }}
+      </p>
+
+      <div
+        v-if="canSeeModerationPreview"
+        class="rounded-[1.3rem] border border-zinc-200/70 bg-zinc-50/80 px-4 py-4 text-sm text-zinc-500 dark:border-white/10 dark:bg-zinc-950/35 dark:text-zinc-400"
+      >
+        <p class="text-xs font-semibold uppercase tracking-[0.12em]">
+          Version originale visible pour la moderation
+        </p>
+        <p class="mt-2 whitespace-pre-wrap leading-7 text-zinc-600 dark:text-zinc-300">
+          {{ props.message.content }}
+        </p>
+      </div>
+
+      <p
+        v-else-if="!props.message.isDeleted"
+        class="whitespace-pre-wrap text-base leading-8 text-zinc-700 dark:text-zinc-200"
+      >
+        {{ props.message.content }}
+      </p>
     </div>
 
     <p

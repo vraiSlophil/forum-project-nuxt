@@ -1,5 +1,6 @@
 import { updateMessage } from '#server/modules/forum/application/commands/update-message'
 import { moderateMessage } from '#server/modules/forum/application/commands/admin/moderate-message'
+import { restoreMessage } from '#server/modules/forum/application/commands/admin/restore-message'
 import { defineForumHttpHandler } from '#server/modules/forum/http/handler'
 import {
   validatePatchMessageInput,
@@ -17,6 +18,13 @@ export default defineForumHttpHandler(async (event) => {
     await moderateMessage(actor, messageId)
     return {
       moderated: true,
+    }
+  }
+
+  if ('action' in input && input.action === 'moderate-restore') {
+    await restoreMessage(actor, messageId)
+    return {
+      restored: true,
     }
   }
 

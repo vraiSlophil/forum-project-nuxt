@@ -9,7 +9,9 @@ definePageMeta({
 const route = useRoute()
 const forumSlug = String(route.params.forumSlug)
 const pageQuery = readPageQueryParam(route.query.page)
+const authHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
 const forumPage = await $fetch<ForumPageResponse>(`/api/forums/${forumSlug}`, {
+  headers: authHeaders,
   query: pageQuery ? { page: pageQuery } : undefined,
 })
 const viewerStateSource = await useForumViewer(() => forumPage.viewer)

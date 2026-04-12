@@ -296,8 +296,9 @@ describe('forum server API', () => {
     )
 
     expect(adminPageResponse.status).toBe(200)
+    expect(adminBody).toContain('Ce message a ete supprime par la moderation.')
     expect(adminBody).toContain('Premier message')
-    expect(adminBody).toContain('Modere')
+    expect(adminBody).toContain('Version originale visible pour la moderation')
     expect(userPageResponse.status).toBe(200)
     expect(userBody).toContain('Ce message a ete supprime par la moderation.')
     expect(userBody).not.toContain('Premier message')
