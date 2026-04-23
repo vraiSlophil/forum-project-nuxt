@@ -585,6 +585,25 @@ export async function findTopicById(topicId: string) {
     select: {
       id: true,
       forumId: true,
+      isLocked: true,
+    },
+  })
+}
+
+export async function updateTopicLockState(topicId: string, isLocked: boolean) {
+  const prisma = usePrisma()
+
+  return prisma.topic.update({
+    where: {
+      id: topicId,
+    },
+    data: {
+      isLocked,
+    },
+    select: {
+      id: true,
+      forumId: true,
+      isLocked: true,
     },
   })
 }

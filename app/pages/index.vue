@@ -5,7 +5,7 @@ import { formatCount, formatForumDate } from '~/utils/forum-ui'
 useSeoMeta({
   title: 'Horizon Forum',
   description:
-    'Liste des forums, lecture publique et navigation SSR dans la hierarchie Forums, Sujets et Messages.',
+    'Liste des forums, lecture publique et navigation SSR dans la hiérarchie Forums, Sujets et Messages.',
 })
 
 const authHeaders = import.meta.server ? useRequestHeaders(['cookie']) : undefined
@@ -49,12 +49,12 @@ const firstForumPath = computed(() => {
                 size="hero"
                 class="mt-6"
               >
-                Forums publics, sujets tries par activite, messages pagines.
+                Forums publics, sujets triés par activité, messages paginés.
               </LandingHeading>
 
               <p class="mt-6 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
                 La page d'accueil liste les forums disponibles avec leur nombre de sujets. La
-                lecture reste ouverte, mais un compte est necessaire pour creer un sujet, repondre
+                lecture reste ouverte, mais un compte est nécessaire pour créer un sujet, répondre
                 et modifier ses propres messages.
               </p>
             </div>
@@ -238,13 +238,13 @@ const firstForumPath = computed(() => {
               </div>
 
               <p class="mt-4 min-h-16 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                {{ forum.description ?? 'Ce forum est pret a accueillir de nouveaux sujets.' }}
+                {{ forum.description ?? 'Ce forum est prêt à accueillir de nouveaux sujets.' }}
               </p>
 
               <div
                 class="mt-6 flex items-center justify-between border-t border-zinc-200/70 pt-4 text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-400"
               >
-                <span>Mis a jour le {{ formatForumDate(forum.updatedAt) }}</span>
+                <span>Mis à jour le {{ formatForumDate(forum.updatedAt) }}</span>
                 <span class="font-medium text-zinc-700 dark:text-zinc-200">Ouvrir</span>
               </div>
             </LandingWhiteCard>
@@ -261,7 +261,7 @@ const firstForumPath = computed(() => {
             Aucun forum n'est encore disponible.
           </LandingHeading>
           <p class="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-            Un administrateur doit creer le premier forum avant d'ouvrir les discussions.
+            Un administrateur doit créer le premier forum avant d'ouvrir les discussions.
           </p>
 
           <div

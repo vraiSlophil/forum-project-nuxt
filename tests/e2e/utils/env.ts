@@ -1,5 +1,5 @@
 export const E2E_POSTGRES_SCHEMA = 'forum_test'
-export const E2E_POSTGRES_DB = 'forum_test'
+export const E2E_POSTGRES_DB = 'forum'
 
 export function buildE2EEnvironment(source: NodeJS.ProcessEnv = process.env) {
   return {

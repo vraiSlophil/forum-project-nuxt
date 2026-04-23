@@ -4,7 +4,7 @@ import { readApiErrorMessage } from '~/utils/api-error'
 
 useSeoMeta({
   title: 'Connexion | Horizon Forum',
-  description: 'Creer un compte, se connecter et ouvrir une session sur Horizon Forum.',
+  description: 'Créer un compte, se connecter et ouvrir une session sur Horizon Forum.',
 })
 
 const route = useRoute()
@@ -88,13 +88,13 @@ async function submitRegister() {
           name="arrow_back"
           size="sm"
         />
-        Retour a l'accueil
+        Retour à l'accueil
       </NuxtLink>
     </div>
 
     <div class="mx-auto mt-10 grid max-w-6xl gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
       <div class="max-w-xl">
-        <LandingPill variant="glass">Acces membre</LandingPill>
+        <LandingPill variant="glass">Accès membre</LandingPill>
 
         <LandingHeading
           as="h1"
@@ -105,12 +105,12 @@ async function submitRegister() {
         </LandingHeading>
 
         <p class="mt-6 text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-          Creez un compte, ouvrez une session et revenez facilement sur vos echanges.
+          Créez un compte, ouvrez une session et revenez facilement sur vos échanges.
         </p>
 
         <div class="mt-8 space-y-4">
           <LandingWhiteCard>
-            <LandingEyebrow>Ce que la session debloque</LandingEyebrow>
+            <LandingEyebrow>Ce que la session débloque</LandingEyebrow>
 
             <div class="mt-5 grid gap-3 sm:grid-cols-2">
               <LandingMutedCard>
@@ -121,7 +121,7 @@ async function submitRegister() {
               </LandingMutedCard>
 
               <LandingMutedCard>
-                <h2 class="text-lg font-semibold tracking-[-0.03em]">Retrouver votre role</h2>
+                <h2 class="text-lg font-semibold tracking-[-0.03em]">Retrouver votre rôle</h2>
                 <p class="mt-2 text-sm leading-6 text-zinc-500 dark:text-zinc-400">
                   Les permissions reviennent avec votre session en cours.
                 </p>
@@ -254,7 +254,7 @@ async function submitRegister() {
             icon="person_add"
             :disabled="pendingMode === 'register'"
           >
-            {{ pendingMode === 'register' ? 'Creation...' : 'Creer mon compte' }}
+            {{ pendingMode === 'register' ? 'Création...' : 'Créer mon compte' }}
           </LandingButton>
         </form>
       </LandingWhiteCard>

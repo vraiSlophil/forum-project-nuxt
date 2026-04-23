@@ -825,7 +825,14 @@ serveur du projet, avec PostgreSQL dans Docker.
 
 Point important d'isolement :
 
-- les e2e utilisent une base PostgreSQL dédiée (`forum_test`)
+Historique a conserver pour le rapport :
+
+- le brainstorming a d'abord retenu l'idee d'une base PostgreSQL dediee
+  `forum_test`
+
+Version actuelle :
+
+- les e2e utilisent finalement le schéma PostgreSQL dédié `forum_test`
 - le schéma `forum_test` est explicité pour Prisma CLI et pour l'adapter runtime
 - la base de développement reste sur `forum` avec le schéma `public`
 - les resets de test ne peuvent donc plus effacer les données locales de
@@ -846,7 +853,12 @@ Le pattern retenu est donc :
 
 - URL Prisma CLI avec `schema=...`
 - adapter runtime avec option `schema`
-- base e2e séparée de la base de dev
+- schéma e2e séparé du schéma de dev
+
+Différence entre l'idée initiale et la version actuelle :
+
+- l'isolation finale est assurée par un schéma dédié plutôt que par une base
+  dédiée
 
 Ce qu'ils vérifient :
 
@@ -876,6 +888,8 @@ Le meilleur compromis à ce stade était donc :
 Quelques points concrets se sont imposés pendant l'implémentation :
 
 - les tests doivent s'exécuter dans le conteneur Docker du projet
+- un wrapper `npm run test:e2e` doit pouvoir déléguer vers le conteneur `app`
+  pour réutiliser le réseau Docker et éviter les écarts de permissions `.nuxt`
 - `nuxi prepare` doit être exécuté avant Vitest, sinon les fichiers Nuxt générés
   manquent
 - les scénarios e2e ont besoin d'un seed de base dédié
@@ -887,7 +901,7 @@ Cela a conduit à :
 - des scripts `test:prepare`, `test:integration` et `test:e2e`
 - un démarrage explicite du serveur Nuxt dans les tests e2e
 - un helper de seed Prisma pour les scénarios e2e
-- un schéma `forum_test` pour séparer les resets e2e de la base de dev
+- un schéma `forum_test` pour séparer les resets e2e du schéma de dev
 - une route `__test__/session` activée seulement avec
   `FORUM_ENABLE_TEST_ROUTES=1`
 
@@ -986,45 +1000,83 @@ Le composant `ForumMessageCard` a été introduit pour sortir de la page sujet :
 Cela évite que la page sujet devienne un template monolithique difficile à faire
 évoluer lorsque d'autres comportements UI arriveront.
 
-### Préparation de la citation
+### Historique : préparation de la citation
 
-La citation n'est pas implémentée de bout en bout pour l'instant, mais le
-terrain a été préparé.
+Dans une version intermédiaire du brainstorming, la citation était pensée comme
+une évolution en deux temps.
 
-Choix retenu :
+Choix imaginés à ce moment-là :
 
 - le clic sur `Citer` prépare un brouillon local avec `messageId`, auteur et
   contenu
-- la réponse continue pour l'instant à n'envoyer que `content`
+- la réponse continue pour un temps à n'envoyer que `content`
 - l'UI indique explicitement que `quotedMessageId` sera branché quand le contrat
   serveur de réponse l'acceptera
 
-Pourquoi cette étape intermédiaire :
+Pourquoi cette étape avait été imaginée :
 
-- ne pas casser le flux actuel de réponse
+- ne pas casser le flux de réponse déjà en place
 - préparer proprement l'évolution sans bricolage dans le template
 - garder l'identifiant du message cité déjà disponible au bon endroit
 
-### Préparation du temps réel
+### Citation livree de bout en bout
 
-Le temps réel via WebSocket n'est pas encore branché, mais un point d'extension
-clair a été introduit.
+La citation est maintenant implementee de bout en bout.
 
 Choix retenu :
+
+- le clic sur `Citer` prepare un brouillon local avec `messageId`, auteur et
+  contenu
+- la reponse envoie `content` et `quotedMessageId`
+- le serveur verifie que le message cite appartient bien au sujet
+- le rendu du sujet affiche d'abord le bloc cite, puis la reponse
+- des tests d'integration et e2e couvrent ce flux
+
+Interet pour le rapport :
+
+- bonus reellement livre
+- evolution propre depuis le composable jusqu'au rendu SSR
+- contrat coherent entre front, use case et persistance
+
+### Historique : préparation du temps réel
+
+Dans une version intermédiaire du brainstorming, le temps réel était encore
+pensé comme un point d'extension.
+
+Choix imaginés à ce moment-là :
 
 - un type partagé `TopicMessageRealtimeEvent`
 - un nom de canal calculé par sujet
 - une fonction `applyRealtimeEvent` dans `useTopicThread`
 
-L'idée est la suivante :
+Projection formulée dans ces notes :
 
-- quand le WebSocket sera ajouté, l'abonnement traduira les messages réseau en
-  `TopicMessageRealtimeEvent`
-- la mise à jour locale des messages restera centralisée dans le composable
-- la page sujet n'aura pas à porter elle-même la logique de fusion temps réel
+- quand le WebSocket serait ajouté, l'abonnement traduirait les messages réseau
+  en `TopicMessageRealtimeEvent`
+- la mise à jour locale des messages resterait centralisée dans le composable
+- la page sujet n'aurait pas à porter elle-même la logique de fusion temps réel
 
-Cela réduit le risque que le futur temps réel duplique la logique déjà utilisée
-par les actions HTTP classiques.
+### Temps reel effectivement branche
+
+Le temps reel via WebSocket est maintenant branche de bout en bout.
+
+Choix retenu :
+
+- une route Nitro `server/routes/_ws.ts`
+- un registre de clients par canal
+- un canal `forums:{forumId}:topics` pour les evenements de sujets
+- un canal `topics:{topicId}:messages` pour les evenements de messages
+- des fonctions de publication dediees pour `topic.created`, `topic.bumped`,
+  `topic.updated`, `topic.deleted`, `message.created`, `message.updated`,
+  `message.deleted`, `message.moderated` et `message.restored`
+- des composables `useForumPage` et `useTopicThread` qui fusionnent ces
+  evenements dans l'etat local
+
+Resultat visible :
+
+- la liste des sujets se met a jour immediatement
+- un sujet ouvert recoit les nouveaux messages sans rechargement
+- le detail d'un sujet reagit aussi au verrouillage / deverrouillage
 
 - question sur l'intérêt du Vue / Nuxt DevTools
 - constat : utiles pour debug
@@ -1147,17 +1199,34 @@ Le forum doit permettre:
 - la moderation par l'administrateur
 - la suppression d'un forum avec suppression de tous ses sujets et messages
 - la suppression d'un sujet avec suppression de tous ses messages
+- la garantie qu'un sujet conserve toujours son message initial
 - le temps reel via WebSocket
 
-Des bonus prevus dans le sujet ont ete integres des maintenant dans le modele
-lorsqu'ils avaient un impact direct sur la base:
+Point metier important a expliciter dans le rapport :
 
-- citation de message
-- avatar
-- verrouillage de sujet
+- le premier message d'un sujet n'est pas supprimable seul
+- si un administrateur veut retirer completement ce contenu, il doit supprimer
+  le sujet entier
 
-Le statut lu / non-lu n'est pas stocke en base car il sera gere uniquement par
-le front.
+Historique de modelisation a conserver :
+
+- a ce stade du brainstorming, les bonus vus comme ayant un impact direct sur la
+  base etaient : citation de message, avatar, verrouillage de sujet
+- le statut lu / non-lu n'etait deja pas prevu en base car pense comme une
+  responsabilite du front
+
+## Etat reel des bonus
+
+Etat a expliciter tel quel dans le rapport pour eviter toute sur-declaration :
+
+- citation de message : livree de bout en bout
+- verrouillage de sujet : livre avec action admin, blocage serveur des reponses
+  et diffusion temps reel du changement
+- avatar : modele prepare via `avatarUrl`, mais upload et affichage reel non
+  livres
+- lu / non-lu : non livre
+
+Le statut lu / non-lu n'est pas stocke en base dans l'etat actuel.
 
 ## Stack retenue
 

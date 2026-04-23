@@ -33,7 +33,7 @@ function handleQuote(message: TopicPageResponse['messages'][number]) {
 
 useSeoMeta({
   title: `${topicPage.topic.title} | ${topicPage.forum.name}`,
-  description: `Lecture paginee du sujet ${topicPage.topic.title} dans le forum ${topicPage.forum.name}.`,
+  description: `Lecture paginée du sujet ${topicPage.topic.title} dans le forum ${topicPage.forum.name}.`,
 })
 </script>
 
@@ -79,7 +79,7 @@ useSeoMeta({
                   size="sm"
                   icon="lock"
                 >
-                  Verrouille
+                  Verrouillé
                 </LandingTag>
               </div>
 
@@ -97,16 +97,50 @@ useSeoMeta({
               </p>
             </div>
 
-            <div class="flex flex-wrap gap-3">
-              <LandingPill variant="accent">
-                {{ formatCount(threadState.topic.messageCount, 'message') }}
-              </LandingPill>
-              <LandingPill
-                v-if="threadState.canReply"
-                variant="glass"
+            <div class="flex flex-col items-start gap-3 lg:items-end">
+              <div class="flex flex-wrap gap-3">
+                <LandingPill variant="accent">
+                  {{ formatCount(threadState.topic.messageCount, 'message') }}
+                </LandingPill>
+                <LandingPill
+                  v-if="threadState.canReply"
+                  variant="glass"
+                >
+                  Réponses ouvertes
+                </LandingPill>
+              </div>
+
+              <p
+                v-if="threadState.topicActionError"
+                class="text-sm font-medium text-rose-700 dark:text-rose-200"
               >
-                Reponses ouvertes
-              </LandingPill>
+                {{ threadState.topicActionError }}
+              </p>
+
+              <div
+                v-if="threadState.canManageTopic"
+                class="flex flex-wrap gap-2"
+              >
+                <LandingButton
+                  variant="outlined"
+                  size="sm"
+                  :icon="threadState.topic.isLocked ? 'lock_open' : 'lock'"
+                  :disabled="threadState.topicActionPending"
+                  @click="threadState.toggleTopicLock(!threadState.topic.isLocked)"
+                >
+                  {{ threadState.topic.isLocked ? 'Déverrouiller' : 'Verrouiller' }}
+                </LandingButton>
+
+                <LandingButton
+                  variant="outlined"
+                  size="sm"
+                  icon="delete"
+                  :disabled="threadState.topicActionPending"
+                  @click="threadState.deleteTopic"
+                >
+                  Supprimer le sujet
+                </LandingButton>
+              </div>
             </div>
           </div>
         </LandingWhiteCard>
@@ -157,37 +191,25 @@ useSeoMeta({
         <LandingWhiteCard v-if="threadState.canReply">
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <LandingEyebrow>Repondre</LandingEyebrow>
+              <LandingEyebrow>Répondre</LandingEyebrow>
               <p class="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                Ajoutez une reponse au sujet. Les nouveaux messages sont affiches par ordre
+                Ajoutez une réponse au sujet. Les nouveaux messages sont affichés par ordre
                 chronologique croissant.
               </p>
               <p class="mt-2 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-                Le flux temps reel ecoute le canal
+                Le flux temps réel écoute le canal
                 <code>{{ threadState.realtimeChannel }}</code
                 >.
               </p>
             </div>
 
-            <div class="flex gap-2">
-              <LandingButton
-                size="sm"
-                icon="reply"
-                @click="threadState.isReplyOpen = !threadState.isReplyOpen"
-              >
-                {{ threadState.isReplyOpen ? 'Fermer' : 'Repondre' }}
-              </LandingButton>
-
-              <LandingButton
-                v-if="threadState.canDeleteTopic"
-                variant="outlined"
-                size="sm"
-                icon="delete"
-                @click="threadState.deleteTopic"
-              >
-                Supprimer le sujet
-              </LandingButton>
-            </div>
+            <LandingButton
+              size="sm"
+              icon="reply"
+              @click="threadState.isReplyOpen = !threadState.isReplyOpen"
+            >
+              {{ threadState.isReplyOpen ? 'Fermer' : 'Répondre' }}
+            </LandingButton>
           </div>
 
           <div
@@ -197,7 +219,7 @@ useSeoMeta({
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p class="font-semibold text-zinc-900 dark:text-white">
-                  Citation preparee de {{ preparedQuote.authorUsername }}
+                  Citation préparée de {{ preparedQuote.authorUsername }}
                 </p>
                 <p class="mt-2 whitespace-pre-wrap leading-7">
                   {{ preparedQuote.content }}
@@ -209,7 +231,7 @@ useSeoMeta({
                   Le message cité n'est pas chargé sur cette page pour l'instant.
                 </p>
                 <p class="mt-1 text-xs leading-6 text-zinc-500 dark:text-zinc-400">
-                  La citation sera reprise dans le message publie.
+                  La citation sera reprise dans le message publié.
                 </p>
               </div>
 
@@ -241,14 +263,14 @@ useSeoMeta({
                 for="reply-content"
                 class="block text-sm font-semibold tracking-[-0.02em]"
               >
-                Votre reponse
+                Votre réponse
               </label>
               <textarea
                 id="reply-content"
                 v-model="threadState.replyForm.content"
                 rows="6"
                 class="w-full rounded-[1.35rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-950 outline-none transition focus:border-[var(--p-primary-color)] focus:ring-4 focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,white)] dark:border-white/10 dark:bg-zinc-950/70 dark:text-white dark:focus:ring-[color-mix(in_srgb,var(--p-primary-color)_18%,transparent)]"
-                placeholder="Ajouter une reponse au sujet"
+                placeholder="Ajouter une réponse au sujet"
               />
             </div>
 
@@ -258,7 +280,7 @@ useSeoMeta({
               icon="send"
               :disabled="threadState.replyPending"
             >
-              {{ threadState.replyPending ? 'Envoi...' : 'Publier la reponse' }}
+              {{ threadState.replyPending ? 'Envoi...' : 'Publier la réponse' }}
             </LandingButton>
           </form>
         </LandingWhiteCard>
@@ -270,10 +292,10 @@ useSeoMeta({
             size="card"
             class="mt-4"
           >
-            Connectez-vous pour repondre
+            Connectez-vous pour répondre
           </LandingHeading>
           <p class="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-            La lecture du sujet est publique, mais la publication d'une reponse demande un compte.
+            La lecture du sujet est publique, mais la publication d'une réponse demande un compte.
           </p>
           <div class="mt-6 flex flex-wrap gap-3">
             <LandingButton
@@ -281,7 +303,7 @@ useSeoMeta({
               icon="person_add"
               @click="viewerState.goToRegister"
             >
-              Creer un compte
+              Créer un compte
             </LandingButton>
             <LandingButton
               variant="outlined"
@@ -294,24 +316,10 @@ useSeoMeta({
         </LandingWhiteCard>
 
         <LandingWhiteCard v-else>
-          <LandingEyebrow>Sujet verrouille</LandingEyebrow>
+          <LandingEyebrow>Sujet verrouillé</LandingEyebrow>
           <p class="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-            Ce sujet est verrouille, aucune nouvelle reponse n'est autorisee.
+            Ce sujet est verrouillé, aucune nouvelle réponse n'est autorisée.
           </p>
-
-          <div
-            v-if="threadState.canDeleteTopic"
-            class="mt-6"
-          >
-            <LandingButton
-              variant="outlined"
-              size="sm"
-              icon="delete"
-              @click="threadState.deleteTopic"
-            >
-              Supprimer le sujet
-            </LandingButton>
-          </div>
         </LandingWhiteCard>
 
         <ForumPagination
@@ -329,7 +337,7 @@ useSeoMeta({
               :to="buildPageHref(threadState.topicPath, threadState.pagination.totalPages)"
               class="font-semibold text-zinc-950 underline dark:text-white"
             >
-              Aller a la derniere page
+              Aller à la dernière page
             </NuxtLink>
           </p>
         </LandingWhiteCard>

@@ -88,7 +88,7 @@ useSeoMeta({
                   icon="admin_panel_settings"
                   @click="viewerState.goToAdmin"
                 >
-                  Gerer les forums
+                  Gérer les forums
                 </LandingButton>
               </div>
             </div>
@@ -180,8 +180,8 @@ useSeoMeta({
             Connectez-vous pour ouvrir un sujet
           </LandingHeading>
           <p class="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-            La lecture des sujets est publique, mais la creation d'un sujet est reservee aux
-            utilisateurs authentifies.
+            La lecture des sujets est publique, mais la création d'un sujet est réservée aux
+            utilisateurs authentifiés.
           </p>
           <div class="mt-6 flex flex-wrap gap-3">
             <LandingButton
@@ -189,7 +189,7 @@ useSeoMeta({
               icon="person_add"
               @click="viewerState.goToRegister"
             >
-              Creer un compte
+              Créer un compte
             </LandingButton>
             <LandingButton
               variant="outlined"
@@ -232,7 +232,7 @@ useSeoMeta({
                       size="sm"
                       icon="lock"
                     >
-                      Verrouille
+                      Verrouillé
                     </LandingTag>
                   </div>
 
@@ -285,7 +285,7 @@ useSeoMeta({
               {{
                 viewerState.isAuthenticated
                   ? 'Vous pouvez ouvrir le premier sujet de ce forum.'
-                  : 'Connectez-vous pour lancer la premiere discussion.'
+                  : 'Connectez-vous pour lancer la première discussion.'
               }}
             </p>
           </LandingWhiteCard>

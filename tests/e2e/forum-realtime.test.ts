@@ -265,19 +265,33 @@ describe('forum realtime websocket', () => {
     subscribe(socket, ['topics:00000000-0000-4000-8000-000000000020:messages'])
 
     try {
+      const createdReply = await requestJson('/api/forums/general/topics/bienvenue/messages', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie: userCookie,
+        },
+        body: JSON.stringify({
+          content: 'Reponse a modifier',
+        }),
+      })
+
+      expect(createdReply.response.status).toBe(201)
+
+      const messageId = (createdReply.body as { message: { id: string } }).message.id
       const waitForUpdated = waitForEnvelope(
         socket,
         (envelope) => envelope.event.type === 'message.updated',
       )
 
-      let response = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      let response = await requestJson(`/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
           cookie: userCookie,
         },
         body: JSON.stringify({
-          content: 'Premier message modifie',
+          content: 'Reponse modifiee',
         }),
       })
 
@@ -285,8 +299,8 @@ describe('forum realtime websocket', () => {
       expect((await waitForUpdated).event).toMatchObject({
         type: 'message.updated',
         message: {
-          id: '00000000-0000-4000-8000-000000000030',
-          content: 'Premier message modifie',
+          id: messageId,
+          content: 'Reponse modifiee',
           isDeleted: false,
         },
       })
@@ -296,7 +310,7 @@ describe('forum realtime websocket', () => {
         (envelope) => envelope.event.type === 'message.moderated',
       )
 
-      response = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      response = await requestJson(`/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
@@ -311,8 +325,8 @@ describe('forum realtime websocket', () => {
       expect((await waitForModerated).event).toMatchObject({
         type: 'message.moderated',
         message: {
-          id: '00000000-0000-4000-8000-000000000030',
-          content: 'Ce message a ete supprime par la moderation.',
+          id: messageId,
+          content: 'Ce message a été supprimé par la modération.',
           isDeleted: true,
         },
       })
@@ -322,7 +336,7 @@ describe('forum realtime websocket', () => {
         (envelope) => envelope.event.type === 'message.restored',
       )
 
-      response = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      response = await requestJson(`/api/messages/${messageId}`, {
         method: 'PATCH',
         headers: {
           'content-type': 'application/json',
@@ -337,8 +351,8 @@ describe('forum realtime websocket', () => {
       expect((await waitForRestored).event).toMatchObject({
         type: 'message.restored',
         message: {
-          id: '00000000-0000-4000-8000-000000000030',
-          content: 'Premier message modifie',
+          id: messageId,
+          content: 'Reponse modifiee',
           isDeleted: false,
         },
       })
@@ -348,7 +362,7 @@ describe('forum realtime websocket', () => {
         (envelope) => envelope.event.type === 'message.deleted',
       )
 
-      response = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      response = await requestJson(`/api/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           cookie: userCookie,
@@ -359,8 +373,8 @@ describe('forum realtime websocket', () => {
       expect((await waitForDeleted).event).toMatchObject({
         type: 'message.deleted',
         message: {
-          id: '00000000-0000-4000-8000-000000000030',
-          content: 'Premier message modifie',
+          id: messageId,
+          content: 'Reponse modifiee',
           isDeleted: false,
         },
       })
@@ -465,6 +479,46 @@ describe('forum realtime websocket', () => {
       expect(replyResponse.response.status).toBe(201)
 
       await expectNoEnvelope(socket, (envelope) => envelope.event.type === 'message.created')
+    } finally {
+      socket.close()
+    }
+  })
+
+  it('broadcasts topic.updated after an admin locks a topic', async () => {
+    const socket = await openRealtimeSocket()
+    const adminCookie = await createSessionCookie('00000000-0000-4000-8000-000000000001')
+
+    subscribe(socket, ['forums:00000000-0000-4000-8000-000000000010:topics'])
+
+    try {
+      const waitForUpdated = waitForEnvelope(
+        socket,
+        (envelope) =>
+          envelope.event.type === 'topic.updated' &&
+          envelope.event.topicId === '00000000-0000-4000-8000-000000000020',
+      )
+
+      const response = await requestJson('/api/admin/topics/00000000-0000-4000-8000-000000000020', {
+        method: 'PATCH',
+        headers: {
+          'content-type': 'application/json',
+          cookie: adminCookie,
+        },
+        body: JSON.stringify({
+          isLocked: true,
+        }),
+      })
+
+      expect(response.response.status).toBe(200)
+      expect((await waitForUpdated).event).toMatchObject({
+        type: 'topic.updated',
+        topicId: '00000000-0000-4000-8000-000000000020',
+        topic: {
+          title: 'Bienvenue',
+          isLocked: true,
+          messageCount: 1,
+        },
+      })
     } finally {
       socket.close()
     }

@@ -99,6 +99,10 @@ export async function publishTopicBumped(topicId: string) {
   await broadcastTopicEvent('topic.bumped', topicId)
 }
 
+export async function publishTopicUpdated(topicId: string) {
+  await broadcastTopicEvent('topic.updated', topicId)
+}
+
 export async function publishTopicDeleted(forumId: string, topicId: string) {
   broadcastTopicDeletedEvent(forumId, topicId)
 }

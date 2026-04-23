@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   publishMessageModerated,
   publishTopicCreated,
+  publishTopicUpdated,
 } from '#server/modules/forum/realtime/publish'
 import * as forumRepository from '#server/modules/forum/infrastructure/forum-repository'
 import * as realtimeRegistry from '#server/modules/forum/realtime/registry'
@@ -49,7 +50,7 @@ describe('forum realtime publish', () => {
           topicId: 'topic-1',
           message: expect.objectContaining({
             id: 'message-1',
-            content: 'Ce message a ete supprime par la moderation.',
+            content: 'Ce message a été supprimé par la modération.',
             isDeleted: true,
           }),
         }),
@@ -122,5 +123,56 @@ describe('forum realtime publish', () => {
     await publishMessageModerated('missing-message')
 
     expect(realtimeRegistry.broadcastToChannel).not.toHaveBeenCalled()
+  })
+
+  it('broadcasts a topic.updated event when an admin locks a topic', async () => {
+    vi.mocked(forumRepository.findTopicRealtimeSummaryById).mockResolvedValue({
+      id: 'topic-1',
+      forumId: 'forum-1',
+      title: 'Sujet verrouille',
+      slug: 'sujet-verrouille',
+      isLocked: true,
+      createdAt: new Date('2026-04-12T10:00:00.000Z'),
+      updatedAt: new Date('2026-04-12T11:00:00.000Z'),
+      lastMessageAt: new Date('2026-04-12T10:30:00.000Z'),
+      author: {
+        id: 'user-1',
+        username: 'alice',
+        avatarUrl: null,
+      },
+      _count: {
+        messages: 3,
+      },
+      messages: [
+        {
+          id: 'message-3',
+          createdAt: new Date('2026-04-12T10:30:00.000Z'),
+          author: {
+            id: 'user-2',
+            username: 'bob',
+            avatarUrl: null,
+          },
+        },
+      ],
+    })
+
+    await publishTopicUpdated('topic-1')
+
+    expect(realtimeRegistry.broadcastToChannel).toHaveBeenCalledWith(
+      'forums:forum-1:topics',
+      expect.objectContaining({
+        channel: 'forums:forum-1:topics',
+        event: expect.objectContaining({
+          forumId: 'forum-1',
+          topicId: 'topic-1',
+          type: 'topic.updated',
+          topic: expect.objectContaining({
+            id: 'topic-1',
+            isLocked: true,
+            messageCount: 3,
+          }),
+        }),
+      }),
+    )
   })
 })

@@ -175,17 +175,29 @@ describe('forum server API', () => {
     expect(topic?.messages).toHaveLength(2)
   })
 
-  it('hard deletes an author message through DELETE /api/messages/:id', async () => {
+  it('hard deletes a non-initial author message through DELETE /api/messages/:id', async () => {
     const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
-    const { response, body } = await requestJson(
-      '/api/messages/00000000-0000-4000-8000-000000000030',
-      {
-        method: 'DELETE',
-        headers: {
-          cookie,
-        },
+    const createdReply = await requestJson('/api/forums/general/topics/bienvenue/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie,
       },
-    )
+      body: JSON.stringify({
+        content: 'Deuxieme message a supprimer',
+      }),
+    })
+
+    expect(createdReply.response.status).toBe(201)
+
+    const messageId = (createdReply.body as { message: { id: string } }).message.id
+
+    const { response, body } = await requestJson(`/api/messages/${messageId}`, {
+      method: 'DELETE',
+      headers: {
+        cookie,
+      },
+    })
 
     expect(response.status).toBe(200)
     expect(body).toMatchObject({
@@ -194,11 +206,31 @@ describe('forum server API', () => {
 
     const deletedMessage = await getTestPrisma().message.findUnique({
       where: {
-        id: '00000000-0000-4000-8000-000000000030',
+        id: messageId,
       },
     })
 
     expect(deletedMessage).toBeNull()
+  })
+
+  it('rejects deletion of the initial topic message', async () => {
+    const cookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+    const { response } = await requestJson('/api/messages/00000000-0000-4000-8000-000000000030', {
+      method: 'DELETE',
+      headers: {
+        cookie,
+      },
+    })
+
+    expect(response.status).toBe(409)
+
+    const initialMessage = await getTestPrisma().message.findUnique({
+      where: {
+        id: '00000000-0000-4000-8000-000000000030',
+      },
+    })
+
+    expect(initialMessage).not.toBeNull()
   })
 
   it('moderates a message through PATCH /api/messages/:id', async () => {
@@ -296,11 +328,11 @@ describe('forum server API', () => {
     )
 
     expect(adminPageResponse.status).toBe(200)
-    expect(adminBody).toContain('Ce message a ete supprime par la moderation.')
+    expect(adminBody).toContain('Ce message a été supprimé par la modération.')
     expect(adminBody).toContain('Premier message')
-    expect(adminBody).toContain('Version originale visible pour la moderation')
+    expect(adminBody).toContain('Version originale visible pour la modération')
     expect(userPageResponse.status).toBe(200)
-    expect(userBody).toContain('Ce message a ete supprime par la moderation.')
+    expect(userBody).toContain('Ce message a été supprimé par la modération.')
     expect(userBody).not.toContain('Premier message')
   })
 
@@ -328,13 +360,82 @@ describe('forum server API', () => {
     expect(body).toContain('Je cite le premier message')
   })
 
+  it('locks a topic for regular users until an admin unlocks it', async () => {
+    const adminCookie = await createSessionCookie('00000000-0000-4000-8000-000000000001')
+    const userCookie = await createSessionCookie('00000000-0000-4000-8000-000000000002')
+
+    let result = await requestJson('/api/admin/topics/00000000-0000-4000-8000-000000000020', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+      },
+      body: JSON.stringify({
+        isLocked: true,
+      }),
+    })
+
+    expect(result.response.status).toBe(200)
+    expect(result.body).toMatchObject({
+      topic: {
+        id: '00000000-0000-4000-8000-000000000020',
+        isLocked: true,
+      },
+    })
+
+    const lockedReply = await requestJson('/api/forums/general/topics/bienvenue/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: userCookie,
+      },
+      body: JSON.stringify({
+        content: 'Refus attendu',
+      }),
+    })
+
+    expect(lockedReply.response.status).toBe(423)
+
+    result = await requestJson('/api/admin/topics/00000000-0000-4000-8000-000000000020', {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+      },
+      body: JSON.stringify({
+        isLocked: false,
+      }),
+    })
+
+    expect(result.response.status).toBe(200)
+    expect(result.body).toMatchObject({
+      topic: {
+        id: '00000000-0000-4000-8000-000000000020',
+        isLocked: false,
+      },
+    })
+
+    const unlockedReply = await requestJson('/api/forums/general/topics/bienvenue/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        cookie: userCookie,
+      },
+      body: JSON.stringify({
+        content: 'Reponse apres deverrouillage',
+      }),
+    })
+
+    expect(unlockedReply.response.status).toBe(201)
+  })
+
   it('renders the topic detail page with its messages', async () => {
     const { response, body } = await requestText('/forums/general/topics/bienvenue')
 
     expect(response.status).toBe(200)
     expect(body).toContain('Bienvenue')
     expect(body).toContain('Premier message')
-    expect(body).toContain('Connectez-vous pour repondre')
+    expect(body).toContain('Connectez-vous pour répondre')
   })
 
   it('returns 403 when a regular user hits an admin route', async () => {

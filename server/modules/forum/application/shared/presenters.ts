@@ -14,7 +14,7 @@ import type {
   TopicMessage,
 } from '#shared/types/forum'
 
-const deletedMessagePlaceholder = 'Ce message a ete supprime par la moderation.'
+const deletedMessagePlaceholder = 'Ce message a été supprimé par la modération.'
 
 function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null
@@ -176,6 +176,9 @@ export function presentTopicMessage(
     } | null
   },
   viewer: SessionForumUser | null,
+  options: {
+    canDeleteOwn?: boolean
+  } = {},
 ): TopicMessage {
   const isDeleted = message.deletedAt !== null
 
@@ -193,7 +196,8 @@ export function presentTopicMessage(
       : null,
     permissions: {
       canEdit: canEditMessage(viewer, message.authorId, isDeleted),
-      canDeleteOwn: canDeleteOwnMessage(viewer, message.authorId, isDeleted),
+      canDeleteOwn:
+        options.canDeleteOwn ?? canDeleteOwnMessage(viewer, message.authorId, isDeleted),
       canModerate: canModerate(viewer),
       canRestore: canModerate(viewer) && isDeleted,
     },

@@ -32,6 +32,11 @@ export async function deleteMessage(
     message.createdAt,
     message.id,
   )
+
+  if (messagePosition === 1) {
+    throw createForumApplicationError('CONFLICT', 'The initial topic message cannot be deleted')
+  }
+
   const result = await deleteMessageRecord({
     messageId: message.id,
     topicId: message.topicId,

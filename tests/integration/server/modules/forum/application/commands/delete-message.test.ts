@@ -122,4 +122,32 @@ describe('deleteMessage', () => {
       message: 'Deleted messages cannot be removed again',
     })
   })
+
+  it('rejects deletion of the initial topic message', async () => {
+    vi.mocked(forumRepository.findMessageForDelete).mockResolvedValue({
+      id: 'message-1',
+      topicId: 'topic-1',
+      authorId: 'user-1',
+      createdAt: new Date('2026-03-01T08:00:00.000Z'),
+      deletedAt: null,
+      topic: {
+        id: 'topic-1',
+        forumId: 'forum-1',
+        title: 'Bienvenue',
+        slug: 'bienvenue',
+        createdAt: new Date('2026-03-01T08:00:00.000Z'),
+        forum: {
+          slug: 'general',
+        },
+      },
+    })
+    vi.mocked(forumRepository.countMessagesUpToPosition).mockResolvedValue(1)
+
+    await expect(deleteMessage(authorActor, 'message-1')).rejects.toMatchObject({
+      code: 'CONFLICT',
+      message: 'The initial topic message cannot be deleted',
+    })
+
+    expect(forumRepository.deleteMessageRecord).not.toHaveBeenCalled()
+  })
 })

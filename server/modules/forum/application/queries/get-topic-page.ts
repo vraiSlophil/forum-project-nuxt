@@ -59,7 +59,11 @@ export async function getTopicPage(
         canDelete: viewerCanModerate,
       },
     },
-    messages: messages.map((message) => presentTopicMessage(message, viewer)),
+    messages: messages.map((message, index) =>
+      presentTopicMessage(message, viewer, {
+        canDeleteOwn: page === 1 && index === 0 ? false : undefined,
+      }),
+    ),
     pagination,
   }
 }

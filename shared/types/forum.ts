@@ -198,6 +198,10 @@ export interface UpdateForumInput {
   description: string | null
 }
 
+export interface UpdateTopicLockInput {
+  isLocked: boolean
+}
+
 export interface CreateAdminUserInput {
   username: string
   password: string
@@ -246,6 +250,13 @@ export interface ForumAdminSummary {
 
 export interface ForumAdminResponse {
   forum: ForumAdminSummary
+}
+
+export interface TopicAdminResponse {
+  topic: {
+    id: string
+    isLocked: boolean
+  }
 }
 
 export interface AdminUserSummary {

@@ -51,9 +51,9 @@ async function submitPasswordChange() {
 
     passwordForm.currentPassword = ''
     passwordForm.newPassword = ''
-    successMessage.value = 'Mot de passe mis a jour.'
+    successMessage.value = 'Mot de passe mis à jour.'
   } catch (error) {
-    errorMessage.value = readApiErrorMessage(error, 'Mise a jour impossible')
+    errorMessage.value = readApiErrorMessage(error, 'Mise à jour impossible')
   } finally {
     pending.value = false
   }
@@ -78,7 +78,7 @@ async function logout() {
           name="arrow_back"
           size="sm"
         />
-        Retour a l'accueil
+        Retour à l'accueil
       </NuxtLink>
 
       <LandingButton
@@ -87,7 +87,7 @@ async function logout() {
         icon="logout"
         @click="logout"
       >
-        Deconnexion
+        Déconnexion
       </LandingButton>
     </div>
 
@@ -104,7 +104,7 @@ async function logout() {
         </LandingHeading>
 
         <p class="text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-          Retrouvez votre session, votre role et mettez a jour votre mot de passe avec l'ancien mot
+          Retrouvez votre session, votre rôle et mettez à jour votre mot de passe avec l'ancien mot
           de passe.
         </p>
 
@@ -186,7 +186,7 @@ async function logout() {
         </LandingHeading>
 
         <p class="mt-4 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-          Comme aucun email n'est stocke dans le profil, la verification passe par votre mot de
+          Comme aucun email n'est stocké dans le profil, la vérification passe par votre mot de
           passe actuel.
         </p>
 
@@ -248,7 +248,7 @@ async function logout() {
             icon="key"
             :disabled="pending"
           >
-            {{ pending ? 'Mise a jour...' : 'Mettre a jour le mot de passe' }}
+            {{ pending ? 'Mise à jour...' : 'Mettre à jour le mot de passe' }}
           </LandingButton>
         </form>
       </LandingWhiteCard>

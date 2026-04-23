@@ -1,9 +1,11 @@
 import type {
   CreateMessageInput,
+  ForumTopicRealtimeEvent,
   MessageDeletionResponse,
   MessageMutationResponse,
   ModerateMessageInput,
   PaginationInfo,
+  TopicAdminResponse,
   TopicDetail,
   TopicMessage,
   TopicMessageRealtimeEvent,
@@ -58,6 +60,7 @@ function hydrateMessagePermissions(
   message: TopicMessage,
   viewerState: TopicViewerState,
   viewerUserId: string | null,
+  starterMessageId: string | null,
 ): TopicMessage {
   const isAdmin = viewerState.isAdmin.value
   const isAuthor = viewerState.isAuthenticated.value && viewerUserId === message.author.id
@@ -67,7 +70,7 @@ function hydrateMessagePermissions(
     permissions: {
       ...message.permissions,
       canEdit: !message.isDeleted && (isAdmin || isAuthor),
-      canDeleteOwn: !message.isDeleted && isAuthor,
+      canDeleteOwn: !message.isDeleted && isAuthor && message.id !== starterMessageId,
       canModerate: isAdmin,
       canRestore: isAdmin && message.isDeleted,
     },
@@ -134,6 +137,21 @@ function isTopicMessageRealtimeEvent(event: unknown): event is TopicMessageRealt
   )
 }
 
+function isForumTopicRealtimeEvent(event: unknown): event is ForumTopicRealtimeEvent {
+  if (!event || typeof event !== 'object' || Array.isArray(event)) {
+    return false
+  }
+
+  const candidate = event as Record<string, unknown>
+
+  return (
+    typeof candidate.forumId === 'string' &&
+    typeof candidate.topicId === 'string' &&
+    typeof candidate.type === 'string' &&
+    candidate.type.startsWith('topic.')
+  )
+}
+
 export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicViewerState) {
   const topicPath = `/forums/${topicPage.forum.slug}/topics/${topicPage.topic.slug}`
   const forumPath = `/forums/${topicPage.forum.slug}`
@@ -165,6 +183,8 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
   const editingMessageId = ref<string | null>(null)
   const editPending = ref(false)
   const editError = ref('')
+  const topicActionPending = ref(false)
+  const topicActionError = ref('')
   const realtimeNotice = ref<RealtimeNotice | null>(null)
   const refreshPending = ref(false)
 
@@ -175,6 +195,8 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
   const canDeleteTopic = computed(
     () => topic.value.permissions.canDelete || viewerState.isAdmin.value,
   )
+  const canManageTopic = computed(() => canDeleteTopic.value)
+  const forumRealtimeChannel = computed(() => `forums:${topicPage.forum.id}:topics`)
   const realtimeChannel = computed(() => `topics:${topic.value.id}:messages`)
   const selectedQuoteMessageId = computed(() => preparedQuote.value?.messageId ?? null)
   const isLastPage = computed(() => pagination.value.page >= pagination.value.totalPages)
@@ -195,6 +217,11 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     topic.value = cloneTopic(nextPage.topic)
     pagination.value = clonePagination(nextPage.pagination)
     messages.value = cloneMessages(nextPage.messages)
+
+    if (topic.value.isLocked) {
+      isReplyOpen.value = false
+      clearQuote()
+    }
   }
 
   async function refreshCurrentPage() {
@@ -229,6 +256,40 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     editForm.content = value
   }
 
+  function getTopicStarterMessageId() {
+    if (pagination.value.page !== 1) {
+      return null
+    }
+
+    return messages.value[0]?.id ?? null
+  }
+
+  function canDeleteMessageLocally(message: Pick<TopicMessage, 'author' | 'id' | 'isDeleted'>) {
+    return (
+      !message.isDeleted &&
+      viewerState.isAuthenticated.value &&
+      message.author.id === topicPage.viewer.userId &&
+      message.id !== getTopicStarterMessageId()
+    )
+  }
+
+  function setTopicLockedStateLocally(isLocked: boolean) {
+    topic.value = {
+      ...topic.value,
+      isLocked,
+      permissions: {
+        ...topic.value.permissions,
+        canReply: viewerState.isAuthenticated.value && !isLocked,
+      },
+    }
+
+    if (isLocked) {
+      isReplyOpen.value = false
+      clearQuote()
+      replyError.value = ''
+    }
+  }
+
   function startEditing(message: TopicMessage) {
     editingMessageId.value = message.id
     editForm.content = message.content
@@ -261,6 +322,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
       cloneMessage(message),
       viewerState,
       topicPage.viewer.userId,
+      getTopicStarterMessageId(),
     )
     const messageIndex = messages.value.findIndex((candidate) => candidate.id === nextMessage.id)
 
@@ -335,14 +397,48 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
         isDeleted: false,
         permissions: {
           ...message.permissions,
-          canDeleteOwn:
-            viewerState.isAuthenticated.value && message.author.id === topicPage.viewer.userId,
+          canDeleteOwn: canDeleteMessageLocally(message),
           canEdit: true,
           canModerate: canModerate.value,
           canRestore: false,
         },
       }
     })
+  }
+
+  function applyTopicRealtimeEvent(event: ForumTopicRealtimeEvent) {
+    if (event.forumId !== topicPage.forum.id || event.topicId !== topic.value.id) {
+      return
+    }
+
+    if (event.type === 'topic.deleted') {
+      setTopicLockedStateLocally(true)
+      showRealtimeNotice('Ce sujet a été supprimé.', forumPath, 'Retourner au forum')
+      return
+    }
+
+    if (event.type !== 'topic.updated' || !event.topic) {
+      return
+    }
+
+    topic.value = {
+      ...topic.value,
+      title: event.topic.title,
+      slug: event.topic.slug,
+      updatedAt: event.topic.updatedAt,
+      lastMessageAt: event.topic.lastMessageAt,
+      messageCount: event.topic.messageCount,
+      author: {
+        ...event.topic.author,
+      },
+    }
+    setTopicLockedStateLocally(event.topic.isLocked)
+
+    showRealtimeNotice(
+      event.topic.isLocked
+        ? "Le sujet vient d'être verrouillé."
+        : "Le sujet vient d'être déverrouillé.",
+    )
   }
 
   async function applyRealtimeEvent(event: TopicMessageRealtimeEvent) {
@@ -357,7 +453,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
         showRealtimeNotice(
           'Un nouveau message est disponible dans ce sujet.',
           buildPageHref(topicPath, pagination.value.totalPages),
-          'Voir la derniere page',
+          'Voir la dernière page',
         )
         return
       }
@@ -371,16 +467,16 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
 
       if (pagination.value.page > pagination.value.totalPages) {
         showRealtimeNotice(
-          'Le fil a change. La derniere page du sujet a ete deplacee.',
+          'Le fil a changé. La dernière page du sujet a été déplacée.',
           buildPageHref(topicPath, pagination.value.totalPages),
-          'Voir la nouvelle derniere page',
+          'Voir la nouvelle dernière page',
         )
         return
       }
 
       if (!isLastPage.value) {
         await refreshCurrentPage()
-        showRealtimeNotice('Le fil a change sur cette page.')
+        showRealtimeNotice('Le fil a changé sur cette page.')
         return
       }
 
@@ -398,7 +494,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     }
 
     if (!messageIsLoaded) {
-      showRealtimeNotice('Des mises a jour sont disponibles dans ce sujet.')
+      showRealtimeNotice('Des mises à jour sont disponibles dans ce sujet.')
       return
     }
 
@@ -422,7 +518,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
       clearQuote()
       await navigateTo(result.redirectTo)
     } catch (error) {
-      replyError.value = readApiErrorMessage(error, 'Envoi de la reponse impossible')
+      replyError.value = readApiErrorMessage(error, 'Envoi de la réponse impossible')
     } finally {
       replyPending.value = false
     }
@@ -452,6 +548,9 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
       return
     }
 
+    topicActionPending.value = true
+    topicActionError.value = ''
+
     try {
       await $fetch(`/api/admin/topics/${topic.value.id}`, {
         method: 'DELETE',
@@ -459,7 +558,37 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
 
       await navigateTo(forumPath)
     } catch (error) {
-      replyError.value = readApiErrorMessage(error, 'Suppression du sujet impossible')
+      topicActionError.value = readApiErrorMessage(error, 'Suppression du sujet impossible')
+    } finally {
+      topicActionPending.value = false
+    }
+  }
+
+  async function toggleTopicLock(isLocked: boolean) {
+    const confirmationMessage = isLocked
+      ? `Verrouiller le sujet "${topic.value.title}" ?`
+      : `Déverrouiller le sujet "${topic.value.title}" ?`
+
+    if (!window.confirm(confirmationMessage)) {
+      return
+    }
+
+    topicActionPending.value = true
+    topicActionError.value = ''
+
+    try {
+      const result = await $fetch<TopicAdminResponse>(`/api/admin/topics/${topic.value.id}`, {
+        method: 'PATCH',
+        body: {
+          isLocked,
+        },
+      })
+
+      setTopicLockedStateLocally(result.topic.isLocked)
+    } catch (error) {
+      topicActionError.value = readApiErrorMessage(error, 'Mise à jour du verrouillage impossible')
+    } finally {
+      topicActionPending.value = false
     }
   }
 
@@ -481,7 +610,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
   }
 
   async function moderateMessage(messageId: string) {
-    if (!window.confirm('Supprimer ce message au titre de la moderation ?')) {
+    if (!window.confirm('Supprimer ce message au titre de la modération ?')) {
       return
     }
 
@@ -495,12 +624,12 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
 
       markMessageModeratedLocally(messageId)
     } catch (error) {
-      editError.value = readApiErrorMessage(error, 'Suppression de moderation impossible')
+      editError.value = readApiErrorMessage(error, 'Suppression de modération impossible')
     }
   }
 
   async function restoreModeratedMessage(messageId: string) {
-    if (!window.confirm('Restaurer ce message modere ?')) {
+    if (!window.confirm('Restaurer ce message modéré ?')) {
       return
     }
 
@@ -520,30 +649,41 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
 
   if (import.meta.client) {
     const realtimeClient = useForumRealtimeClient()
-    let unsubscribe: (() => void) | undefined
+    let unsubscribeMessages: (() => void) | undefined
+    let unsubscribeTopics: (() => void) | undefined
 
     onMounted(() => {
       if (!realtimeClient) {
         return
       }
 
-      unsubscribe = realtimeClient.subscribe(realtimeChannel.value, async (event) => {
+      unsubscribeMessages = realtimeClient.subscribe(realtimeChannel.value, async (event) => {
         if (!isTopicMessageRealtimeEvent(event)) {
           return
         }
 
         await applyRealtimeEvent(event)
       })
+      unsubscribeTopics = realtimeClient.subscribe(forumRealtimeChannel.value, (event) => {
+        if (!isForumTopicRealtimeEvent(event)) {
+          return
+        }
+
+        applyTopicRealtimeEvent(event)
+      })
     })
 
     onBeforeUnmount(() => {
-      unsubscribe?.()
+      unsubscribeMessages?.()
+      unsubscribeTopics?.()
     })
   }
 
   return {
     applyRealtimeEvent,
+    applyTopicRealtimeEvent,
     canDeleteTopic,
+    canManageTopic,
     canModerate,
     canReply,
     cancelEditing,
@@ -554,6 +694,7 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     editForm,
     editPending,
     editingMessageId,
+    forumRealtimeChannel,
     forumPath,
     isReplyOpen,
     messages,
@@ -574,6 +715,9 @@ export function useTopicThread(topicPage: TopicPageResponse, viewerState: TopicV
     submitEdit,
     submitReply,
     topic,
+    topicActionError,
+    topicActionPending,
     topicPath,
+    toggleTopicLock,
   }
 }

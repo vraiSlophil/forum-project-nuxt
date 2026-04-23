@@ -34,7 +34,7 @@ function handleQuoteClick() {
   emit('select-quote', props.message)
 }
 
-const deletedMessagePlaceholder = 'Ce message a ete supprime par la moderation.'
+const deletedMessagePlaceholder = 'Ce message a été supprimé par la modération.'
 const canSeeModerationPreview = computed(
   () => props.message.isDeleted && props.message.permissions.canRestore,
 )
@@ -84,7 +84,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
   if (props.message.permissions.canEdit) {
     actions.push({
       key: 'moderation-edit',
-      label: 'Modifier en tant que moderateur',
+      label: 'Modifier en tant que modérateur',
       icon: 'edit',
       tone: 'moderation',
       onSelect: () => emit('start-edit', props.message),
@@ -102,7 +102,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
   } else {
     actions.push({
       key: 'moderate-delete',
-      label: 'Supprimer par moderation',
+      label: 'Supprimer par modération',
       icon: 'gavel',
       tone: 'moderation',
       onSelect: () => emit('moderate-delete', props.message.id),
@@ -138,7 +138,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
               tone="secondary"
               size="sm"
             >
-              Modere
+              Modéré
             </LandingTag>
 
             <LandingTag
@@ -146,7 +146,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
               tone="primary"
               size="sm"
             >
-              Modifie
+              Modifié
             </LandingTag>
 
             <LandingTag
@@ -155,7 +155,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
               size="sm"
               icon="format_quote"
             >
-              Citation prete
+              Citation prête
             </LandingTag>
           </div>
 
@@ -169,7 +169,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
         <ForumMessageActionDial
           v-if="moderationActions.length > 0"
           trigger-icon="admin_panel_settings"
-          trigger-label="Ouvrir les actions de moderation"
+          trigger-label="Ouvrir les actions de modération"
           variant="moderation"
           :actions="moderationActions"
           @show="isActionsOpen = true"
@@ -260,7 +260,7 @@ const moderationActions = computed<ForumMessageAction[]>(() => {
         class="rounded-[1.3rem] border border-zinc-200/70 bg-zinc-50/80 px-4 py-4 text-sm text-zinc-500 dark:border-white/10 dark:bg-zinc-950/35 dark:text-zinc-400"
       >
         <p class="text-xs font-semibold uppercase tracking-[0.12em]">
-          Version originale visible pour la moderation
+          Version originale visible pour la modération
         </p>
         <p class="mt-2 whitespace-pre-wrap leading-7 text-zinc-600 dark:text-zinc-300">
           {{ props.message.content }}

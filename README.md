@@ -69,8 +69,9 @@ Notes:
 - l'URL Postgres est recomposée en code à partir de `POSTGRES_*`
 - `POSTGRES_PORT` est le port interne entre conteneurs ; `POSTGRES_HOST_PORT`
   sert uniquement à l'exposition sur ta machine
-- les tests e2e utilisent une base PostgreSQL dédiée `forum_test` et forcent
-  aussi le schéma `forum_test`, pour éviter toute écriture sur la base de dev
+- `npm run test:e2e` délègue l'exécution au conteneur `app`
+- les tests e2e utilisent le schéma PostgreSQL dédié `forum_test` dans la base
+  `forum`, pour éviter toute écriture sur le schéma de dev `public`
 - avec Prisma 7, la connexion DB est portée par `prisma.config.ts`, pas par
   `schema.prisma`
 - le conteneur `app` installe les dépendances dans un volume Docker dédié au

@@ -168,7 +168,7 @@ export function useForumPage(forumPage: ForumPageResponse, viewerState: ForumVie
 
       if (!isFirstPage.value) {
         showRealtimeNotice(
-          'La liste des sujets a change.',
+          'La liste des sujets a changé.',
           buildPageHref(forumPath, pagination.value.page),
         )
         return
@@ -183,7 +183,7 @@ export function useForumPage(forumPage: ForumPageResponse, viewerState: ForumVie
     }
 
     if (!isFirstPage.value) {
-      showRealtimeNotice('Une activite recente est disponible dans ce forum.', forumPath)
+      showRealtimeNotice('Une activité récente est disponible dans ce forum.', forumPath)
       return
     }
 
@@ -205,7 +205,7 @@ export function useForumPage(forumPage: ForumPageResponse, viewerState: ForumVie
 
       await navigateTo(result.redirectTo)
     } catch (error) {
-      submitError.value = readApiErrorMessage(error, 'Creation du sujet impossible')
+      submitError.value = readApiErrorMessage(error, 'Création du sujet impossible')
     } finally {
       isSubmitting.value = false
     }

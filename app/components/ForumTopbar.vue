@@ -110,7 +110,7 @@ async function logout() {
           icon="logout"
           @click="logout"
         >
-          Deconnexion
+          Déconnexion
         </LandingButton>
       </div>
     </nav>

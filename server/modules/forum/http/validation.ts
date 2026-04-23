@@ -12,6 +12,7 @@ import type {
   TopicSlugParams,
   UpdateForumInput,
   UpdateMessageInput,
+  UpdateTopicLockInput,
 } from '#shared/types/forum'
 import { createError } from 'h3'
 
@@ -117,6 +118,17 @@ function readPassword(value: unknown) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Field "password" must not exceed 255 characters',
+    })
+  }
+
+  return value
+}
+
+function readRequiredBoolean(value: unknown, field: string) {
+  if (typeof value !== 'boolean') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Field "${field}" must be a boolean`,
     })
   }
 
@@ -299,6 +311,14 @@ export function validateUpdateForumInput(value: unknown): UpdateForumInput {
       maxLength: 120,
     }),
     description: readOptionalString(body.description, 'description'),
+  }
+}
+
+export function validateUpdateTopicLockInput(value: unknown): UpdateTopicLockInput {
+  const body = readObject(value, 'request body')
+
+  return {
+    isLocked: readRequiredBoolean(body.isLocked, 'isLocked'),
   }
 }
 

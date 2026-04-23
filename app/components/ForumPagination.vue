@@ -43,7 +43,7 @@ const showTrailingEllipsis = computed(() => lastVisiblePage.value < props.pagina
         :to="buildPageHref(props.basePath, props.pagination.page - 1)"
         class="inline-flex min-h-10 items-center rounded-full border border-zinc-200 px-4 text-sm font-medium text-zinc-700 transition hover:border-[var(--p-primary-color)] hover:text-zinc-950 dark:border-white/10 dark:text-zinc-200"
       >
-        Precedent
+        Précédent
       </NuxtLink>
 
       <NuxtLink

@@ -13,7 +13,7 @@ import { formatCount, formatForumDateTime } from '~/utils/forum-ui'
 useSeoMeta({
   title: 'Administration | Horizon Forum',
   description:
-    'Creer, renommer et supprimer des forums ainsi que creer des comptes administrateurs.',
+    'Créer, renommer et supprimer des forums ainsi que créer des comptes administrateurs.',
 })
 
 const { fetch: fetchUserSession, loggedIn, user } = useUserSession()
@@ -97,10 +97,10 @@ async function submitCreateForum() {
 
     createForumForm.name = ''
     createForumForm.description = ''
-    feedbackMessage.value = 'Forum cree.'
+    feedbackMessage.value = 'Forum créé.'
     await reloadForums()
   } catch (error) {
-    createForumError.value = readApiErrorMessage(error, 'Creation du forum impossible')
+    createForumError.value = readApiErrorMessage(error, 'Création du forum impossible')
   } finally {
     createForumPending.value = false
   }
@@ -119,9 +119,9 @@ async function submitCreateAdmin() {
 
     createAdminForm.username = ''
     createAdminForm.password = ''
-    feedbackMessage.value = `Administrateur ${result.user.username} cree.`
+    feedbackMessage.value = `Administrateur ${result.user.username} créé.`
   } catch (error) {
-    createAdminError.value = readApiErrorMessage(error, "Creation de l'administrateur impossible")
+    createAdminError.value = readApiErrorMessage(error, "Création de l'administrateur impossible")
   } finally {
     createAdminPending.value = false
   }
@@ -137,10 +137,10 @@ async function updateForum(forumId: string) {
       body: forumDraft(forumId),
     })
 
-    feedbackMessage.value = 'Forum mis a jour.'
+    feedbackMessage.value = 'Forum mis à jour.'
     await reloadForums()
   } catch (error) {
-    createForumError.value = readApiErrorMessage(error, 'Mise a jour du forum impossible')
+    createForumError.value = readApiErrorMessage(error, 'Mise à jour du forum impossible')
   } finally {
     forumActionPendingId.value = null
   }
@@ -159,7 +159,7 @@ async function deleteForum(forumId: string, forumName: string) {
       method: 'DELETE',
     })
 
-    feedbackMessage.value = 'Forum supprime.'
+    feedbackMessage.value = 'Forum supprimé.'
     await reloadForums()
   } catch (error) {
     createForumError.value = readApiErrorMessage(error, 'Suppression du forum impossible')
@@ -189,10 +189,10 @@ async function deleteForum(forumId: string, forumName: string) {
                 size="hero"
                 class="mt-6"
               >
-                Gerer les forums et les administrateurs.
+                Gérer les forums et les administrateurs.
               </LandingHeading>
               <p class="mt-5 max-w-3xl text-lg leading-8 text-zinc-600 dark:text-zinc-300">
-                Cette page regroupe les interfaces manquantes pour creer des forums, les renommer,
+                Cette page regroupe les interfaces manquantes pour créer des forums, les renommer,
                 les supprimer et ouvrir d’autres comptes administrateurs.
               </p>
             </div>
@@ -232,7 +232,7 @@ async function deleteForum(forumId: string, forumName: string) {
               size="card"
               class="mt-4"
             >
-              Creer un forum
+              Créer un forum
             </LandingHeading>
 
             <p
@@ -282,7 +282,7 @@ async function deleteForum(forumId: string, forumName: string) {
                 icon="add"
                 :disabled="createForumPending"
               >
-                {{ createForumPending ? 'Creation...' : 'Creer le forum' }}
+                {{ createForumPending ? 'Création...' : 'Créer le forum' }}
               </LandingButton>
             </form>
           </LandingWhiteCard>
@@ -294,7 +294,7 @@ async function deleteForum(forumId: string, forumName: string) {
               size="card"
               class="mt-4"
             >
-              Creer un compte administrateur
+              Créer un compte administrateur
             </LandingHeading>
 
             <p
@@ -344,7 +344,7 @@ async function deleteForum(forumId: string, forumName: string) {
                 icon="verified_user"
                 :disabled="createAdminPending"
               >
-                {{ createAdminPending ? 'Creation...' : 'Creer l’administrateur' }}
+                {{ createAdminPending ? 'Création...' : 'Créer l’administrateur' }}
               </LandingButton>
             </form>
           </LandingWhiteCard>
@@ -370,7 +370,7 @@ async function deleteForum(forumId: string, forumName: string) {
                 </h2>
 
                 <p class="mt-3 text-sm leading-7 text-zinc-600 dark:text-zinc-300">
-                  Derniere mise a jour le {{ formatForumDateTime(forum.updatedAt) }}.
+                  Dernière mise à jour le {{ formatForumDateTime(forum.updatedAt) }}.
                 </p>
               </div>
 
